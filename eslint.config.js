@@ -63,7 +63,7 @@ export default tseslint.config(
                     message: "Prefer using the class's name directly.",
                 },
                 {
-                    selector: "TSTupleType > :not(TSNamedTupleMember)",
+                    selector: "TSTupleType > :not(TSNamedTupleMember):not(TSRestType)",
                     message: "All tuples should have labels.",
                 },
                 {
