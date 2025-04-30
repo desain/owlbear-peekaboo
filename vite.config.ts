@@ -19,6 +19,7 @@ export default defineConfig({
                     __dirname,
                     "/src/background/background.html",
                 ),
+                popoverSettings: resolve(__dirname, "/src/popoverSettings/popoverSettings.html"),
             },
         },
     },
