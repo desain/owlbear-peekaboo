@@ -1,5 +1,12 @@
-import OBR from "@owlbear-rodeo/sdk";
+import OBR, {
+    BoundingBox,
+    Image,
+    isImage,
+    Item,
+    Math2,
+} from "@owlbear-rodeo/sdk";
 import { enableMapSet } from "immer";
+import { ExtractNonFunctions, GridParams, GridParsed } from "owlbear-utils";
 import { create } from "zustand";
 import { persist, subscribeWithSelector } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
@@ -7,55 +14,39 @@ import { LOCAL_STORAGE_STORE_NAME } from "../constants";
 
 enableMapSet();
 
-const SET_SENSIBLE = Symbol("SetSensible");
-
-const ObrSceneReady = new Promise<void>((resolve) => {
-    OBR.onReady(async () => {
-        if (await OBR.scene.isReady()) {
-            resolve();
-        } else {
-            const unsubscribeScene = OBR.scene.onReadyChange((ready) => {
-                if (ready) {
-                    unsubscribeScene();
-                    resolve();
-                }
-            });
-        }
-    });
-});
-
-/**
- * @returns Default values for persisted local storage that depend on an OBR scene.
- */
-async function fetchDefaults(): Promise<null> {
-    await ObrSceneReady;
-    return null;
-}
-
 interface LocalStorage {
-    readonly hasSensibleValues: boolean;
     readonly toolEnabled: boolean;
-    readonly contextMenuEnabled: boolean;
-    [SET_SENSIBLE](this: void): void;
+    readonly snapOrigin: boolean;
+    /**
+     * What label to show based on how many corners are visible.
+     */
+    readonly cornerLabels: Partial<Record<number, string>>;
+    /**
+     * What color to show based on how many corners are visible.
+     */
+    readonly cornerColors: Partial<Record<number, string>>;
     setToolEnabled(this: void, toolEnabled: boolean): void;
-    setContextMenuEnabled(this: void, contextMenuEnabled: boolean): void;
+    setSnapOrigin(this: void, snapOrigin: boolean): void;
+    setCornerLabel(this: void, index: number, value: string): void;
+    setCornerColor(this: void, index: number, value: string): void;
 }
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyFunction = (this: void, ...args: any[]) => unknown;
-type ExtractNonFunctions<T> = {
-    [K in keyof T as T[K] extends AnyFunction ? never : K]: T[K];
-};
 function partializeLocalStorage({
-    hasSensibleValues,
     toolEnabled,
-    contextMenuEnabled,
+    snapOrigin,
+    cornerLabels,
+    cornerColors,
 }: LocalStorage): ExtractNonFunctions<LocalStorage> {
-    return { hasSensibleValues, toolEnabled, contextMenuEnabled };
+    return { toolEnabled, snapOrigin, cornerLabels, cornerColors };
 }
 
 interface OwlbearStore {
     sceneReady: boolean;
-    setSceneReady: (sceneReady: boolean) => void;
+    grid: GridParsed;
+    characterBoundingBoxes: [id: string, box: BoundingBox][];
+    setSceneReady: (this: void, sceneReady: boolean) => void;
+    setGrid: (this: void, grid: GridParams) => Promise<void>;
+    getGridCorners: (this: void) => number;
+    updateItems: (this: void, items: Item[]) => void;
 
     /*
     Notes on mirroring metadata:
@@ -87,40 +78,107 @@ interface OwlbearStore {
 export const usePlayerStorage = create<LocalStorage & OwlbearStore>()(
     subscribeWithSelector(
         persist(
-            immer((set) => ({
+            immer((set, get) => ({
                 // local storage
-                hasSensibleValues: false,
-                toolEnabled: false,
-                contextMenuEnabled: false,
-                [SET_SENSIBLE]: () => set({ hasSensibleValues: true }),
+                toolEnabled: true,
+                snapOrigin: false,
+                cornerLabels: [
+                    "Full Cover",
+                    "3/4 Cover",
+                    "Half Cover",
+                    "No Cover",
+                    "No Cover",
+                ],
+                cornerColors: [
+                    "#c97b7b",
+                    "#d1a17b",
+                    "#d6c97b",
+                    "#a7c97b",
+                    "#7bc97b",
+                    "#64d364",
+                    "#49dd49",
+                ],
                 setToolEnabled: (toolEnabled) => set({ toolEnabled }),
-                setContextMenuEnabled: (contextMenuEnabled) =>
-                    set({ contextMenuEnabled }),
+                setSnapOrigin: (snapOrigin) => set({ snapOrigin }),
+                setCornerLabel: (index, value) =>
+                    set((state) => {
+                        state.cornerLabels[index] = value;
+                    }),
+                setCornerColor: (index, value) =>
+                    set((state) => {
+                        state.cornerColors[index] = value;
+                    }),
 
                 // owlbear store
                 sceneReady: false,
+                grid: {
+                    dpi: -1,
+                    measurement: "CHEBYSHEV",
+                    type: "SQUARE",
+                    parsedScale: {
+                        digits: 1,
+                        unit: "ft",
+                        multiplier: 5,
+                    },
+                },
+                characterBoundingBoxes: [],
                 setSceneReady: (sceneReady: boolean) => set({ sceneReady }),
+                setGrid: async (grid: GridParams) => {
+                    const parsedScale = (await OBR.scene.grid.getScale())
+                        .parsed;
+                    return set({
+                        grid: {
+                            dpi: grid.dpi,
+                            measurement: grid.measurement,
+                            type: grid.type,
+                            parsedScale,
+                        },
+                    });
+                },
+                getGridCorners: () => {
+                    const gridType = get().grid.type;
+                    return gridType === "HEX_HORIZONTAL" ||
+                        gridType === "HEX_VERTICAL"
+                        ? 6
+                        : 4;
+                },
+                updateItems: (items) =>
+                    set((state) => ({
+                        characterBoundingBoxes: items
+                            .filter(isImage)
+                            .filter((item) => item.layer === "CHARACTER")
+                            .map((item) => [
+                                item.id,
+                                getBoundingBox(item, state.grid),
+                            ]),
+                    })),
             })),
             {
                 name: LOCAL_STORAGE_STORE_NAME,
                 partialize: partializeLocalStorage,
-                onRehydrateStorage() {
-                    return (state, error) => {
-                        if (state) {
-                            if (!state.hasSensibleValues) {
-                                void fetchDefaults().then(() => {
-                                    state[SET_SENSIBLE]();
-                                });
-                            }
-                        } else if (error) {
-                            console.error(
-                                "Error hydrating player settings store",
-                                error,
-                            );
-                        }
-                    };
-                },
             },
         ),
     ),
 );
+
+function getBoundingBox(item: Image, grid: GridParsed): BoundingBox {
+    const dpiScaling = grid.dpi / item.grid.dpi;
+    const width = item.image.width * item.scale.x * dpiScaling;
+    if (width === -1) {
+        console.error(item, grid.dpi);
+    }
+    const height = item.image.height * item.scale.y * dpiScaling;
+    return {
+        center: item.position,
+        width,
+        height,
+        min: Math2.subtract(item.position, {
+            x: width / 2,
+            y: height / 2,
+        }),
+        max: Math2.add(item.position, {
+            x: width / 2,
+            y: height / 2,
+        }),
+    };
+}
