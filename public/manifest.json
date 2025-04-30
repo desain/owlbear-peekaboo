@@ -1,17 +1,11 @@
 {
-  "name": "TODO extension name",
-  "description": "TODO extension description.",
+  "name": "Peekaboo",
+  "description": "Adds a tool to check token cover and visibility.",
   "version": "0.0.2",
   "manifest_version": 1,
   "author": "desain",
   "icon": "/logo.svg",
   "homepage_url": "https://github.com/desain/owlbear-template",
-  "action": {
-    "title": "TODO extension name",
-    "icon": "/logo.svg",
-    "popover": "/src/action/action.html",
-    "height": 300,
-    "width": 300
-  },
+  "background_url": "/src/background/background.html",
   "permissions": []
 }

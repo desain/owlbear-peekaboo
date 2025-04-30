@@ -1,6 +1,6 @@
 ---
-title: TODO extension name
-description: TODO extension description.
+title: Peekaboo
+description: Adds a tool to check token cover and visibility.
 author: desain
 image: TODO image
 icon: https://owlbear-template.pages.dev/logo.png
@@ -8,7 +8,7 @@ learn-more: https://github.com/desain/owlbear-template
 manifest: https://owlbear-template.pages.dev/manifest.json
 ---
 
-# TODO extension name
+# Peekaboo
 
 TODO
 

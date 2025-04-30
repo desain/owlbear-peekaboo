@@ -15,7 +15,10 @@ export default defineConfig({
         rollupOptions: {
             input: {
                 // must have a 'main' entry point
-                action: resolve(__dirname, "/src/action/action.html"),
+                background: resolve(
+                    __dirname,
+                    "/src/background/background.html",
+                ),
             },
         },
     },

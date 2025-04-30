@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300">
-    <rect x="0" y="0" width="300" height="300" fill="#fb3ef9"/>
-    <rect x="0" y="150" width="150" height="150" fill="#000"/>
-    <rect x="150" y="0" width="150" height="150" fill="#000"/>
+    <!-- Eye shape (white) -->
+    <ellipse cx="150" cy="150" rx="120" ry="70" fill="#fff"/>
+    <!-- Iris cut-out (black, appears as negative space) -->
+    <circle cx="150" cy="150" r="40" fill="#000"/>
+    <!-- Highlight cut-out (black, smaller negative space) -->
+    <circle cx="165" cy="140" r="10" fill="#000"/>
 </svg>

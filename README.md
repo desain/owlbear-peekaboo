@@ -1,10 +1,12 @@
-# TODO extension name
+# Peekaboo
 
-TODO
+Owlbear Rodeo extension for checking token visibility.
 
 ## Features
 
-TODO
+-   Adds a new tool to check the visiblity of tokens and grid squares
+-   Customize the display names and colors for different levels of visibility
+-   When switching back to the tool, if the previous visibility check started or ended on a token that's still present, it will update to the token's new position
 
 ## How to use
 
@@ -21,8 +23,6 @@ After checkout, run `pnpm install`.
 ## How it Works
 
 This project is a Typescript app.
-
-The `action.html` page is rendered in the 'renderAction.tsx' file, which calls OBR APIs to set up the context menu and installs handlers to manage auras.
 
 ## Building
 
@@ -42,8 +42,11 @@ To make a production build run:
 
 ## To do
 
-- Add lints from codeo
-- Use ExtractNonFunctions from utils
+-   Snap start when creating it, instead of in #fixControls
+-   two sets of lines, white until the stop point, red after
+-   Public vis checks (interaction). Separate mode from private?
+-   Add some way to incorporate partial obstacles like tables, so that any visibility line that passes through them isn't counted as full visibility.
+-   Some kind of super clever way of keeping track of local walls and doing raycasting based on that rather than the hacky current way.
 
 ## License
 
