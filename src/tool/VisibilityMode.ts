@@ -1,15 +1,14 @@
-import OBR, {
+import type {
     Image,
     ImageContent,
     ImageGrid,
-    Math2,
     ToolContext,
     ToolEvent,
     ToolMode,
     Vector2,
-    buildImage,
 } from "@owlbear-rodeo/sdk";
-import { ItemApi } from "owlbear-utils";
+import OBR, { Math2, buildImage } from "@owlbear-rodeo/sdk";
+import type { ItemApi } from "owlbear-utils";
 import eyeTarget from "../../assets/eye-target.svg";
 
 import {
@@ -22,16 +21,15 @@ import {
     METADATA_KEY_TOOL_MEASURE_PRIVATE,
 } from "../constants";
 import { CANCEL_SYMBOL, createGetCheckCancel } from "../utils";
-import {
-    ControlItems,
-    fixControlItems,
-    makeInteractionItems,
-} from "./ControlItems";
-import {
+import type { ControlItems } from "./ControlItems";
+import { fixControlItems, makeInteractionItems } from "./ControlItems";
+import type {
     DisplayPreviousDragState,
     DraggingState,
     InitializingDragState,
     ModeState,
+} from "./ModeState";
+import {
     deleteIcons,
     isDisplayingPreviousDragState,
     isDraggingState,
@@ -41,15 +39,8 @@ import {
     stopDragging,
     stopInitializing,
 } from "./ModeState";
-import {
-    LocationPin,
-    Pin,
-    TokenPin,
-    isLocationPin,
-    isTokenPin,
-    movePin,
-    updatePin,
-} from "./Pin";
+import type { LocationPin, Pin, TokenPin } from "./Pin";
+import { isLocationPin, isTokenPin, movePin, updatePin } from "./Pin";
 import { raycast } from "./raycast";
 
 export function makeIcon(position: Vector2): Image {

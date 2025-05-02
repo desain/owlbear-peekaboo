@@ -1,14 +1,7 @@
-import OBR, {
-    BoundingBox,
-    Image,
-    isImage,
-    isWall,
-    Item,
-    Math2,
-    Wall,
-} from "@owlbear-rodeo/sdk";
+import type { BoundingBox, Image, Item, Wall } from "@owlbear-rodeo/sdk";
+import OBR, { isImage, isWall, Math2 } from "@owlbear-rodeo/sdk";
 import { featureCollection, lineString, polygon } from "@turf/turf";
-import {
+import type {
     Feature,
     FeatureCollection,
     LineString,
@@ -16,7 +9,11 @@ import {
     Position,
 } from "geojson";
 import { enableMapSet } from "immer";
-import { ExtractNonFunctions, GridParams, GridParsed } from "owlbear-utils";
+import type {
+    ExtractNonFunctions,
+    GridParams,
+    GridParsed,
+} from "owlbear-utils";
 import { create } from "zustand";
 import { persist, subscribeWithSelector } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";

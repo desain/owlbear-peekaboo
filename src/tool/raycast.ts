@@ -1,8 +1,10 @@
-import { Math2, Vector2 } from "@owlbear-rodeo/sdk";
+import type { Vector2 } from "@owlbear-rodeo/sdk";
+import { Math2 } from "@owlbear-rodeo/sdk";
 import { usePlayerStorage } from "../state/usePlayerStorage";
 import { snapToCenter } from "../utils";
 import { getGridCorners } from "./gridUtils";
-import { Pin, getPinLocation } from "./Pin";
+import type { Pin } from "./Pin";
+import { getPinLocation } from "./Pin";
 import { raycastTurf } from "./raycastTurf";
 
 export interface RaycastResult {

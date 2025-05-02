@@ -1,4 +1,5 @@
-import OBR, { Item, ToolContext } from "@owlbear-rodeo/sdk";
+import type { Item, ToolContext } from "@owlbear-rodeo/sdk";
+import OBR from "@owlbear-rodeo/sdk";
 import broom from "../../assets/broom.svg";
 import chatBubble from "../../assets/chat-bubble.svg";
 import cog from "../../assets/cog.svg";

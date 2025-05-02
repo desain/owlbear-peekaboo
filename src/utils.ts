@@ -1,4 +1,5 @@
-import OBR, { BoundingBox, Vector2 } from "@owlbear-rodeo/sdk";
+import type { BoundingBox, Vector2 } from "@owlbear-rodeo/sdk";
+import OBR from "@owlbear-rodeo/sdk";
 
 export function boundingBoxContains(
     point: Vector2,
