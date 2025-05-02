@@ -1,11 +1,13 @@
-import OBR, { Item } from "@owlbear-rodeo/sdk";
-import { ItemApi } from "owlbear-utils";
+import type { Item } from "@owlbear-rodeo/sdk";
+import OBR from "@owlbear-rodeo/sdk";
+import type { Draft } from "immer";
+import type { ItemApi } from "owlbear-utils";
 
 /**
  * Type that abstracts over a network interaction or a local item interaction
  */
 export type AbstractInteraction<Items> = {
-    update: (updater: (value: Items) => void) => Promise<Items>;
+    update: (updater: (value: Draft<Items>) => void) => Promise<Items>;
     keepAndStop: (toReAdd: ReadonlyArray<Item>) => Promise<void>;
     itemApi: ItemApi;
 };
@@ -19,11 +21,10 @@ export async function wrapRealInteraction<Items extends Item[]>(
         items,
     );
     return {
-        update: (updater: (items: Items) => void) => {
-            type Updater = Parameters<typeof update>[0];
+        update: (updater: (items: Draft<Items>) => void) => {
             // eslint false positive
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
-            const newItems: Items = update(updater as Updater); // SAFETY: Updater is intended to work on drafts
+            const newItems: Items = update(updater);
             return Promise.resolve(newItems);
         },
         keepAndStop: async (items: ReadonlyArray<Item>) => {
@@ -46,10 +47,10 @@ export async function createLocalInteraction<Items extends Item[]>(
     const newItems = items.filter((item) => !existingIds.includes(item.id));
     await OBR.scene.local.addItems(newItems);
     return {
-        update: async (updater: (items: Items) => void) => {
+        update: async (updater: (items: Draft<Items>) => void) => {
             await OBR.scene.local.updateItems(
                 ids,
-                (items) => updater(items as unknown as Items), // SAFETY: items to update will always be the interaction items
+                (items) => updater(items as Draft<Items>), // SAFETY: items to update will always be the interaction items
             );
             return OBR.scene.local.getItems(ids) as unknown as Promise<Items>; // SAFETY: retrieved items will always be the interaction items
         },

@@ -1,10 +1,6 @@
-import { Vector2 } from "@owlbear-rodeo/sdk";
-import {
-    ANGLE_DIMETRIC_RADIANS,
-    GridParsed,
-    isHexGrid,
-    SQRT_3,
-} from "owlbear-utils";
+import type { Vector2 } from "@owlbear-rodeo/sdk";
+import type { GridParsed } from "owlbear-utils";
+import { ANGLE_DIMETRIC_RADIANS, isHexGrid, SQRT_3 } from "owlbear-utils";
 
 const X_SCALE_DIMETRIC = 1 / Math.tan(ANGLE_DIMETRIC_RADIANS);
 

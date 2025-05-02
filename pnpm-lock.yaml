@@ -26,9 +26,6 @@ importers:
       globals:
         specifier: ^16.0.0
         version: 16.0.0
-      immer:
-        specifier: ^10.1.1
-        version: 10.1.1
       owlbear-utils:
         specifier: git+https://github.com/desain/owlbear-utils.git
         version: git+https://github.com/desain/owlbear-utils.git#28fbf4b8ff70d5504f27c85d438ca4fe10f2523e(@types/react@19.1.2)(react-dom@19.1.0(react@19.1.0))
@@ -72,6 +69,9 @@ importers:
       eslint-plugin-react-refresh:
         specifier: ^0.4.20
         version: 0.4.20(eslint@9.25.1)
+      immer:
+        specifier: ^10.1.1
+        version: 10.1.1
       typescript:
         specifier: ^5.8.3
         version: 5.8.3

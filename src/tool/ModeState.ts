@@ -1,8 +1,10 @@
-import OBR, { Vector2 } from "@owlbear-rodeo/sdk";
-import { getId, isObject, ItemApi } from "owlbear-utils";
-import { AbstractInteraction } from "../AbstractInteraction";
-import { ControlItems } from "./ControlItems";
-import { Pin } from "./Pin";
+import type { Vector2 } from "@owlbear-rodeo/sdk";
+import OBR from "@owlbear-rodeo/sdk";
+import type { ItemApi } from "owlbear-utils";
+import { getId, isObject } from "owlbear-utils";
+import type { AbstractInteraction } from "../AbstractInteraction";
+import type { ControlItems } from "./ControlItems";
+import type { Pin } from "./Pin";
 
 /**
  * State for when we're not displaying, but we remember where the start

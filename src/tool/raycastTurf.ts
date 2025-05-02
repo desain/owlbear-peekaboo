@@ -1,4 +1,4 @@
-import { Vector2 } from "@owlbear-rodeo/sdk";
+import type { Vector2 } from "@owlbear-rodeo/sdk";
 import { distance, lineIntersect, lineString, point } from "@turf/turf";
 import { usePlayerStorage } from "../state/usePlayerStorage";
 

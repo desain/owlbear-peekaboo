@@ -25,6 +25,7 @@
     "eslint": "^9.25.1",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
+    "immer": "^10.1.1",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.31.1",
     "vite": "^6.3.4"
@@ -36,7 +37,6 @@
     "@turf/turf": "^7.2.0",
     "eslint-plugin-prefer-arrow-functions": "^3.6.2",
     "globals": "^16.0.0",
-    "immer": "^10.1.1",
     "owlbear-utils": "git+https://github.com/desain/owlbear-utils.git",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

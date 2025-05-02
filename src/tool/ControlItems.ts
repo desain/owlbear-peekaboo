@@ -1,19 +1,12 @@
-import {
-    buildCurve,
-    buildLabel,
-    buildLine,
-    Curve,
-    Label,
-    Line,
-    Math2,
-    Metadata,
-} from "@owlbear-rodeo/sdk";
+import type { Curve, Label, Line, Metadata } from "@owlbear-rodeo/sdk";
+import { buildCurve, buildLabel, buildLine, Math2 } from "@owlbear-rodeo/sdk";
 import { METADATA_KEY_IS_PEEKABOO_CONTROL } from "../constants";
 import { usePlayerStorage } from "../state/usePlayerStorage";
 import { NOT_CANCELLABLE } from "../utils";
 import { getGridCorners } from "./gridUtils";
-import { Pin } from "./Pin";
-import { raycast, RaycastResult } from "./raycast";
+import type { Pin } from "./Pin";
+import type { RaycastResult } from "./raycast";
+import { raycast } from "./raycast";
 
 export type ControlItems = [
     /**
