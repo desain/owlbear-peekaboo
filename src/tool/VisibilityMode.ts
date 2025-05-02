@@ -1,64 +1,104 @@
 import OBR, {
-    BoundingBox,
-    Curve,
     Image,
     ImageContent,
     ImageGrid,
-    Item,
-    Label,
-    Line,
     Math2,
     ToolContext,
     ToolEvent,
     ToolMode,
     Vector2,
-    buildCurve,
     buildImage,
-    buildLabel,
-    buildLine,
 } from "@owlbear-rodeo/sdk";
-import { getId } from "owlbear-utils";
-import logo from "../../assets/logo.svg";
-import { TOOL_ID, TOOL_VISIBILITY_MODE_ID } from "../constants";
-import { usePlayerStorage } from "../state/usePlayerStorage";
+import { ItemApi } from "owlbear-utils";
+import eyeTarget from "../../assets/eye-target.svg";
+
+import {
+    createLocalInteraction,
+    wrapRealInteraction,
+} from "../AbstractInteraction";
+import {
+    ID_TOOL,
+    ID_TOOL_MODE_VISIBILITY,
+    METADATA_KEY_TOOL_MEASURE_PRIVATE,
+} from "../constants";
+import { CANCEL_SYMBOL, createGetCheckCancel } from "../utils";
+import {
+    ControlItems,
+    fixControlItems,
+    makeInteractionItems,
+} from "./ControlItems";
+import {
+    DisplayPreviousDragState,
+    DraggingState,
+    InitializingDragState,
+    ModeState,
+    deleteIcons,
+    isDisplayingPreviousDragState,
+    isDraggingState,
+    isInitializingDragState,
+    isRememberPreviousDragState,
+    stopDisplayingPreviousDrag,
+    stopDragging,
+    stopInitializing,
+} from "./ModeState";
 import {
     LocationPin,
     Pin,
     TokenPin,
-    getPinLocation,
     isLocationPin,
     isTokenPin,
+    movePin,
     updatePin,
 } from "./Pin";
-import { getGridCorners } from "./gridUtils";
-import { raycast } from "./raycast";
+import { doRaycast } from "./raycast";
 
-function boundingBoxContains(point: Vector2, boundingBox: BoundingBox) {
-    return (
-        point.x >= boundingBox.min.x &&
-        point.x <= boundingBox.max.x &&
-        point.y >= boundingBox.min.y &&
-        point.y <= boundingBox.max.y
-    );
+export function makeIcon(position: Vector2): Image {
+    const imageContent: ImageContent = {
+        height: 150,
+        width: 150,
+        mime: "image/svg+xml",
+        url:
+            window.location.origin +
+            // import.meta.env.BASE_URL +
+            eyeTarget,
+    };
+    const imageGrid: ImageGrid = {
+        dpi: 150,
+        offset: { x: 75, y: 75 },
+    };
+    return buildImage(imageContent, imageGrid)
+        .name("Peekaboo Icon")
+        .position(position)
+        .disableHit(true)
+        .locked(true)
+        .layer("CONTROL")
+        .scale({ x: 0.6, y: 0.6 })
+        .build();
 }
 
-function vector2Equals(a: Vector2, b: Vector2) {
-    return a.x === b.x && a.y === b.y;
+function getIsPrivate(context: ToolContext): boolean {
+    return !!context.metadata[METADATA_KEY_TOOL_MEASURE_PRIVATE];
+}
+
+function getItemApi(context: ToolContext): ItemApi {
+    return getIsPrivate(context) ? OBR.scene.local : OBR.scene.items;
+}
+
+function getStartInteraction(context: ToolContext) {
+    return getIsPrivate(context) ? createLocalInteraction : wrapRealInteraction;
+}
+
+function createPinIcon(pin: Pin): string | null {
+    if (isTokenPin(pin)) {
+        const icon = makeIcon(pin.cachedPosition);
+        void OBR.scene.local.addItems([icon]);
+        return icon.id;
+    }
+    return null;
 }
 
 export class VisibilityMode implements ToolMode {
-    id = TOOL_VISIBILITY_MODE_ID;
-    icons = [
-        {
-            icon: logo,
-            label: "Check Visibility",
-            filter: {
-                activeTools: [TOOL_ID],
-            },
-        },
-    ];
-
-    cursors = [
+    readonly cursors = [
         {
             cursor: "cell",
             filter: {
@@ -73,38 +113,24 @@ export class VisibilityMode implements ToolMode {
         { cursor: "crosshair" },
     ];
 
-    #start: Pin | null = null;
+    readonly icons = [
+        {
+            icon: eyeTarget,
+            label: "Check Visibility",
+            filter: {
+                activeTools: [ID_TOOL],
+            },
+        },
+    ];
+
+    readonly id = ID_TOOL_MODE_VISIBILITY;
+
+    readonly #getCheckCancel = createGetCheckCancel();
 
     /**
-     * Location: center of square we're looking at. Plus maybe a pin to a creature
-     * at that location.
+     * State of tool mode.
      */
-    #end: Pin | null = null;
-
-    /**
-     * Cache of local line items IDs.
-     */
-    #lineIds: string[] = [];
-
-    /**
-     * ID of item used to highlight target grid cell.
-     */
-    #highlightId: string | null = null;
-
-    /**
-     * ID of label item used to show cover label.
-     */
-    #labelId: string | null = null;
-
-    /**
-     * ID of image item used to mark the start pin (if TokenPin).
-     */
-    #startIconId: string | null = null;
-
-    /**
-     * ID of image item used to mark the end pin (if TokenPin).
-     */
-    #endIconId: string | null = null;
+    #modeState: ModeState = null;
 
     static readonly #getStart = (event: ToolEvent): Pin => {
         const startPosition = event.pointerPosition;
@@ -121,350 +147,236 @@ export class VisibilityMode implements ToolMode {
         }
     };
 
-    /**
-     * @returns Whether the end position changed.
-     */
-    readonly #updateEnd = async (event: ToolEvent): Promise<boolean> => {
-        const snappedPosition = await VisibilityMode.#snap(
-            event.pointerPosition,
-        );
-
-        if (
-            this.#end &&
-            vector2Equals(snappedPosition, getPinLocation(this.#end))
-        ) {
-            return false;
-        }
-
-        const boundingBoxes =
-            usePlayerStorage.getState().characterBoundingBoxes;
-        const targetToken = boundingBoxes.find(([, boundingBox]) =>
-            boundingBoxContains(snappedPosition, boundingBox),
-        );
-        if (targetToken) {
-            // Update end pin
-            const [targetId, { center }] = targetToken;
-            this.#end = {
-                id: targetId,
-                cachedPosition: center,
-                offset: Math2.subtract(snappedPosition, center),
-            } satisfies TokenPin;
-        } else {
-            // Update end pin
-            this.#end = {
-                position: snappedPosition,
-            } satisfies LocationPin;
-        }
-
-        return true;
-    };
-
-    readonly #fixEndIcon = () => {
-        if (isLocationPin(this.#end)) {
+    static readonly #fixEndIcon = (
+        end: Pin,
+        state: DisplayPreviousDragState | DraggingState,
+    ) => {
+        if (isLocationPin(end)) {
             // Remove icon
-            if (this.#endIconId) {
-                void OBR.scene.local.deleteItems([this.#endIconId]);
-                this.#endIconId = null;
+            if (state.endIconId) {
+                void OBR.scene.local.deleteItems([state.endIconId]);
+                state.endIconId = null;
             }
-        } else if (this.#end !== null) {
-            const position = this.#end.cachedPosition;
+        } else {
+            // Token pin
+            const position = end.cachedPosition;
 
             // Create or update icon
-            if (this.#endIconId) {
-                void OBR.scene.local.updateItems([this.#endIconId], (images) =>
+            if (state.endIconId) {
+                void OBR.scene.local.updateItems([state.endIconId], (images) =>
                     images.forEach((image) => {
                         image.position = position;
                     }),
                 );
             } else {
-                const icon = VisibilityMode.makeIcon(position);
-                void OBR.scene.local.addItems([icon]);
-                this.#endIconId = icon.id;
+                state.endIconId = createPinIcon(end);
             }
         }
     };
 
-    static readonly #snap = (position: Vector2) =>
-        OBR.scene.grid.snapPosition(position, 1.0, false, true);
+    readonly onActivate = async (context: ToolContext) => {
+        if (isRememberPreviousDragState(this.#modeState)) {
+            const [newStart, newEnd] = await Promise.all([
+                updatePin(this.#modeState.start),
+                updatePin(this.#modeState.end),
+            ]);
+            if (!isRememberPreviousDragState(this.#modeState)) {
+                return; // state was changed from underneath us
+            }
 
-    static readonly #makeLine = (
-        start: Vector2,
-        end: Vector2,
-        color: string,
-    ): Line =>
-        buildLine()
-            .strokeColor(color)
-            .strokeWidth(10)
-            .strokeOpacity(0.6)
-            .strokeDash([1, 30])
-            .startPosition(start)
-            .endPosition(end)
-            .disableHit(true)
-            .locked(true)
-            .layer("CONTROL")
-            .build();
+            const displayItems = await makeInteractionItems(newStart, newEnd);
+            if (!isRememberPreviousDragState(this.#modeState)) {
+                return; // state was changed from underneath us
+            }
 
-    static readonly #fixHighlight = (
-        curve: Curve,
-        centerPosition: Vector2,
-        color: string,
-    ) => {
-        const grid = usePlayerStorage.getState().grid;
-        curve.points = getGridCorners({ x: 0, y: 0 }, grid);
-        curve.position = centerPosition;
-        curve.style.fillColor = color;
-        curve.style.strokeColor = color;
-    };
+            const itemApi = getItemApi(context);
+            void itemApi.addItems(displayItems);
 
-    static readonly #makeHighlight = (
-        centerPosition: Vector2,
-        color: string,
-    ): Curve => {
-        const curve = buildCurve()
-            .fillColor(color)
-            .fillOpacity(0.2)
-            .strokeColor(color)
-            .strokeOpacity(1)
-            .strokeWidth(5)
-            .tension(0)
-            .closed(true)
-            .disableHit(true)
-            .locked(true)
-            .layer("CONTROL")
-            .build();
-        VisibilityMode.#fixHighlight(curve, centerPosition, color);
-        return curve;
-    };
-
-    static readonly #fixLabel = (
-        label: Label,
-        centerPosition: Vector2,
-        text: string,
-    ) => {
-        if (text === "") {
-            label.scale = { x: 0, y: 0 };
+            this.#modeState = {
+                start: this.#modeState.start,
+                end: this.#modeState.end,
+                startIconId: createPinIcon(newStart),
+                endIconId: createPinIcon(newEnd),
+                displayItems,
+                itemApi,
+            } satisfies DisplayPreviousDragState;
+        } else if (this.#modeState === null) {
+            // noop - no drag to restore
         } else {
-            label.scale = { x: 1, y: 1 };
-        }
-        const dpi = usePlayerStorage.getState().grid.dpi;
-        label.text.plainText = text;
-        label.position = Math2.add(centerPosition, { x: 0, y: -dpi / 2 });
-    };
-
-    static readonly #makeLabel = (
-        centerPosition: Vector2,
-        text: string,
-    ): Label => {
-        const label = buildLabel()
-            // .fontSize(Math.max(18, dpi / 5))
-            .pointerHeight(10)
-            .pointerWidth(10)
-            .disableHit(true)
-            .locked(true)
-            .layer("CONTROL")
-            .build();
-        VisibilityMode.#fixLabel(label, centerPosition, text);
-        return label;
-    };
-
-    readonly #deleteControls = async () => {
-        const toDelete = [...this.#lineIds];
-        if (this.#highlightId) {
-            toDelete.push(this.#highlightId);
-        }
-        if (this.#labelId) {
-            toDelete.push(this.#labelId);
-        }
-        if (this.#startIconId) {
-            toDelete.push(this.#startIconId);
-        }
-        if (this.#endIconId) {
-            toDelete.push(this.#endIconId);
-        }
-        if (toDelete.length > 0) {
-            this.#lineIds = [];
-            this.#highlightId = null;
-            this.#labelId = null;
-            this.#startIconId = null;
-            this.#endIconId = null;
-            await OBR.scene.local.deleteItems(toDelete);
+            console.warn(
+                "[Peekaboo] onActiviate, expected null or remembering state, got",
+                this.#modeState,
+            );
         }
     };
 
-    static readonly makeIcon = (position: Vector2): Image => {
-        const imageContent: ImageContent = {
-            height: 300,
-            width: 300,
-            mime: "image/svg+xml",
-            url:
-                window.location.origin +
-                // import.meta.env.BASE_URL +
-                logo,
-        };
-        const imageGrid: ImageGrid = {
-            dpi: 300,
-            offset: { x: 150, y: 150 },
-        };
-        return buildImage(imageContent, imageGrid)
-            .position(position)
-            .disableHit(true)
-            .locked(true)
-            .layer("CONTROL")
-            .scale({ x: 0.7, y: 0.7 })
-            .build();
-    };
+    readonly onToolDragStart = (context: ToolContext, event: ToolEvent) => {
+        console.log("onToolDragStart");
+        if (isDisplayingPreviousDragState(this.#modeState)) {
+            this.#modeState = stopDisplayingPreviousDrag(this.#modeState);
+        }
 
-    readonly #fixControls = async () => {
-        if (this.#start === null || this.#end === null) {
+        if (
+            this.#modeState !== null &&
+            !isRememberPreviousDragState(this.#modeState)
+        ) {
+            console.warn(
+                "[Peekaboo] onToolDragStart without null/remembering state",
+                this.#modeState,
+            );
             return;
         }
 
-        this.#fixEndIcon();
+        const start = VisibilityMode.#getStart(event);
+        this.#modeState = {
+            start,
+            startIconId: createPinIcon(start),
+            lastPointerPosition: event.pointerPosition,
+        } satisfies InitializingDragState;
 
-        let startPosition = getPinLocation(this.#start);
-        if (usePlayerStorage.getState().snapOrigin) {
-            startPosition = await VisibilityMode.#snap(startPosition);
+        void this.#initializeDrag(context, event);
+    };
+
+    readonly #initializeDrag = async (
+        context: ToolContext,
+        event: ToolEvent,
+    ) => {
+        const [initialEnd] = await movePin(null, event.pointerPosition);
+        if (!isInitializingDragState(this.#modeState)) {
+            return; // state was changed underneath us
         }
-
-        const state = usePlayerStorage.getState();
-        const endPosition = getPinLocation(this.#end);
-        const corners = getGridCorners(endPosition, state.grid);
-        const collidedPositions = await raycast(startPosition, corners);
-
-        const castResults = collidedPositions.map((endpoint, i) =>
-            Math2.compare(endpoint, corners[i], 0.1),
+        const controls = await makeInteractionItems(
+            this.#modeState.start,
+            initialEnd,
         );
-        const numCastsSucceeded = castResults.reduce(
-            (a, v) => a + Number(v),
-            0,
-        );
-
-        const toAdd: Item[] = [];
-
-        // Create or update highlight
-        const highlightColor =
-            state.cornerColors[numCastsSucceeded] ?? "#cccccc";
-        if (this.#highlightId === null) {
-            const highlight = VisibilityMode.#makeHighlight(
-                endPosition,
-                highlightColor,
-            );
-            this.#highlightId = highlight.id;
-            toAdd.push(highlight);
-        } else {
-            await OBR.scene.local.updateItems<Curve>(
-                [this.#highlightId],
-                (curves) =>
-                    curves.forEach((curve) => {
-                        VisibilityMode.#fixHighlight(
-                            curve,
-                            endPosition,
-                            highlightColor,
-                        );
-                    }),
-            );
+        if (!isInitializingDragState(this.#modeState)) {
+            return; // state was changed underneath us
         }
 
-        // Create or update label
-        const labelText = state.cornerLabels[numCastsSucceeded] ?? "";
-        if (this.#labelId === null) {
-            const label = VisibilityMode.#makeLabel(endPosition, labelText);
-            this.#labelId = label.id;
-            toAdd.push(label);
-        } else {
-            await OBR.scene.local.updateItems<Label>(
-                [this.#labelId],
-                (labels) =>
-                    labels.forEach((label) => {
-                        VisibilityMode.#fixLabel(label, endPosition, labelText);
-                    }),
-            );
+        const startInteraction = getStartInteraction(context);
+        const interaction = await startInteraction<ControlItems>(...controls);
+        if (!isInitializingDragState(this.#modeState)) {
+            void interaction.keepAndStop([]); // TODO change to using?
+            return; // state was changed underneath us
         }
 
-        // Create or update lines
-        const lineColors = castResults.map((castResult) =>
-            castResult ? "#ffffff" : "#ff0000",
-        );
-        if (this.#lineIds.length === 0) {
-            const lines = collidedPositions.map((endpoint, i) =>
-                VisibilityMode.#makeLine(
-                    startPosition,
-                    endpoint,
-                    lineColors[i],
-                ),
-            );
-            this.#lineIds = lines.map(getId);
-            toAdd.push(...lines);
-        } else {
-            await OBR.scene.local.updateItems<Line>(this.#lineIds, (lines) =>
-                lines.forEach((line, i) => {
-                    line.startPosition = startPosition;
-                    line.endPosition = collidedPositions[i];
-                    line.style.strokeColor = lineColors[i];
-                }),
-            );
-        }
+        const lastPointerPosition = this.#modeState.lastPointerPosition;
+        this.#modeState = {
+            start: this.#modeState.start,
+            startIconId: this.#modeState.startIconId,
+            end: initialEnd,
+            endIconId: null,
+            lastUpdatedItems: controls,
+            interaction,
+            itemApi: getItemApi(context),
+        } satisfies DraggingState;
 
-        if (toAdd.length > 0) {
-            await OBR.scene.local.addItems(toAdd);
+        // console.log("initializeDrag done");
+        void this.#handleDragEvent(lastPointerPosition);
+    };
+
+    readonly onToolDragMove = (_: ToolContext, event: ToolEvent) => {
+        // console.log("onToolDragMove");
+        if (isInitializingDragState(this.#modeState)) {
+            console.log("onToolDragMove: initializing");
+            this.#modeState.lastPointerPosition = event.pointerPosition;
+        } else if (isDraggingState(this.#modeState)) {
+            console.log("onToolDragMove: dragging");
+            void this.#handleDragEvent(event.pointerPosition);
+        } else {
+            console.warn(
+                "[Peekaboo] onToolDragMove: expected initializing or dragging, got",
+                this.#modeState,
+            );
         }
     };
 
-    readonly #createStartIcon = async () => {
-        if (isTokenPin(this.#start)) {
-            if (this.#startIconId) {
-                // Defensive: remove any existing icon first
-                await OBR.scene.local.deleteItems([this.#startIconId]);
-                this.#startIconId = null;
+    readonly #handleDragEvent = async (newPointerPosition: Vector2) => {
+        try {
+            if (!isDraggingState(this.#modeState)) {
+                return; // state was changed from underneath us
             }
-            const icon = VisibilityMode.makeIcon(this.#start.cachedPosition);
-            this.#startIconId = icon.id;
-            await OBR.scene.local.addItems([icon]);
-        }
-    };
+            const [newEnd, changedEnd] = await movePin(
+                this.#modeState.end,
+                newPointerPosition,
+            );
+            if (!changedEnd) {
+                return;
+            }
+            if (!isDraggingState(this.#modeState)) {
+                return; // state was changed from underneath us
+            }
+            this.#modeState.end = newEnd;
 
-    readonly onActivate = async () => {
-        async function tryUpdatePin(pin: Pin | null): Promise<Pin | null> {
-            if (pin) {
-                return updatePin(pin);
+            const checkCancel = this.#getCheckCancel();
+
+            const raycastResult = await doRaycast(
+                this.#modeState.start,
+                this.#modeState.end,
+                checkCancel,
+            );
+            checkCancel();
+            if (!isDraggingState(this.#modeState)) {
+                return; // state was changed from underneath us
+            }
+
+            const lastUpdatedItems = await this.#modeState.interaction.update(
+                (items) => {
+                    fixControlItems(items, raycastResult);
+                },
+            );
+            if (!isDraggingState(this.#modeState)) {
+                return; // state was changed from underneath us
+            }
+
+            VisibilityMode.#fixEndIcon(newEnd, this.#modeState);
+            this.#modeState.lastUpdatedItems = lastUpdatedItems;
+        } catch (e) {
+            if (e === CANCEL_SYMBOL) {
+                return;
             } else {
-                return null;
+                throw e;
             }
         }
-        [this.#start, this.#end] = await Promise.all([
-            tryUpdatePin(this.#start),
-            tryUpdatePin(this.#end),
-        ]);
-        await this.#createStartIcon();
-        await this.#fixControls();
     };
 
-    readonly onToolDragStart = async (_: ToolContext, event: ToolEvent) => {
-        [this.#start] = await Promise.all([
-            VisibilityMode.#getStart(event),
-            this.#updateEnd(event),
-        ]);
-        await this.#createStartIcon();
+    readonly onToolDragCancel = (_: ToolContext, event: ToolEvent) => {
+        console.log("onToolDragCancel");
+        void this.#stopCurrentState(event, false);
     };
 
-    readonly onToolDragMove = async (_: ToolContext, event: ToolEvent) => {
-        if (!this.#start || !this.#end) {
-            return;
+    readonly onToolDragEnd = (_: ToolContext, event: ToolEvent) => {
+        console.log("onToolDragEnd");
+        void this.#stopCurrentState(event, true);
+    };
+
+    readonly #stopCurrentState = async (event: ToolEvent, keep: boolean) => {
+        if (isInitializingDragState(this.#modeState)) {
+            this.#modeState = stopInitializing(this.#modeState);
+        } else if (isDraggingState(this.#modeState)) {
+            if (keep) {
+                await this.#handleDragEvent(event.pointerPosition);
+            }
+            if (!isDraggingState(this.#modeState)) {
+                return; // state was changed from underneath us
+            }
+            this.#modeState = stopDragging(this.#modeState, keep);
+        } else {
+            console.warn(
+                "[Peekaboo] stopCurrentState: Expected dragging/initializing, got",
+                this.#modeState,
+            );
         }
+    };
 
-        const changedEnd = await this.#updateEnd(event);
-        if (!changedEnd) {
-            return;
+    readonly onDeactivate = () => {
+        console.log("onDeactivate");
+        if (isDisplayingPreviousDragState(this.#modeState)) {
+            void deleteIcons(this.#modeState);
+            this.#modeState = stopDisplayingPreviousDrag(this.#modeState);
+        } else if (isDraggingState(this.#modeState)) {
+            void deleteIcons(this.#modeState);
+            this.#modeState = stopDragging(this.#modeState, false);
         }
-
-        await this.#fixControls();
-    };
-
-    readonly onDeactivate = async () => {
-        await this.#deleteControls();
-    };
-
-    readonly onToolDragCancel = async () => {
-        await this.#deleteControls();
     };
 }
