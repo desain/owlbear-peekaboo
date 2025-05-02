@@ -71,7 +71,7 @@ export default tseslint.config(
                 },
                 {
                     selector:
-                        ':matches(PropertyDefinition, MethodDefinition)[accessibility="private"]',
+                        ':matches(PropertyDefinition, MethodDefinition)[accessibility="private"][kind!="constructor"]',
                     message: "Use #private instead",
                 },
             ],
