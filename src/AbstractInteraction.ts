@@ -18,12 +18,12 @@ export async function wrapRealInteraction<Items extends Item[]>(
     const [update, stop] = await OBR.interaction.startItemInteraction<Items>(
         items,
     );
-    type Updater = Parameters<typeof update>[0];
     return {
-        update: (updater: Updater) => {
+        update: (updater: (items: Items) => void) => {
+            type Updater = Parameters<typeof update>[0];
             // eslint false positive
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
-            const newItems: Items = update(updater); // SAFETY: Updater is intended to work on drafts
+            const newItems: Items = update(updater as Updater); // SAFETY: Updater is intended to work on drafts
             return Promise.resolve(newItems);
         },
         keepAndStop: async (items: ReadonlyArray<Item>) => {
