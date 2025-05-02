@@ -4,7 +4,9 @@ import { version } from "../../package.json";
 import { startSyncing } from "../state/startSyncing";
 import { startWatchingToolEnabled } from "../tool/tool";
 
-let uninstall: VoidFunction = () => {};
+let uninstall: VoidFunction = () => {
+    // nothing to uninstall by default
+};
 
 // function installBroadcastListener() {
 //     return OBR.broadcast.onMessage(MESSAGE_CHANNEL, ({ data }) => {
@@ -43,7 +45,9 @@ OBR.onReady(async () => {
             uninstall = await installExtension();
         } else {
             uninstall();
-            uninstall = () => {};
+            uninstall = () => {
+                // nothing to uninstall anymore
+            };
         }
     });
 });

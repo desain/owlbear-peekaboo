@@ -23,7 +23,7 @@ export async function snapToCenter(pos: Vector2): Promise<Vector2> {
 
 export const CANCEL_SYMBOL = Symbol("cancel");
 export function createGetCheckCancel(): () => VoidFunction {
-    let seq: number = 0;
+    let seq = 0;
     return () => {
         seq++;
         const mySeq = seq;
@@ -36,7 +36,9 @@ export function createGetCheckCancel(): () => VoidFunction {
         };
     };
 }
-export const NOT_CANCELLABLE: VoidFunction = () => {};
+export const NOT_CANCELLABLE: VoidFunction = () => {
+    // no cancel
+};
 
 if (import.meta.vitest) {
     const { describe, it, expect } = import.meta.vitest;

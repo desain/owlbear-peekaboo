@@ -2,7 +2,7 @@ import OBR from "@owlbear-rodeo/sdk";
 import { deferCallAll } from "owlbear-utils";
 import { usePlayerStorage } from "./usePlayerStorage";
 
-const sceneReady: Promise<void> = new Promise((resolve) => {
+const sceneReady = new Promise<void>((resolve) => {
     OBR.onReady(async () => {
         if (await OBR.scene.isReady()) {
             resolve();

@@ -4,7 +4,7 @@ import { usePlayerStorage } from "../state/usePlayerStorage";
 
 export function raycastTurf(
     origin: Readonly<Vector2>,
-    ends: ReadonlyArray<Vector2>,
+    ends: readonly Vector2[],
 ): Vector2[] {
     const walls = usePlayerStorage.getState().walls.geometry;
 
