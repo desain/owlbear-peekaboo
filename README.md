@@ -51,6 +51,8 @@ To make a production build run:
     - Block every other vision line?
 -   Delete icons when cleaning up
 -   Icon to show current version (https://game-icons.net/1x1/delapouite/info.html)
+-   Turf separate imports? https://turfjs.org/docs/api/featureCollection, https://turfjs.org/docs/api/lineIntersect
+-   Combine walls? https://turfjs.org/docs/api/combine
 
 ## License
 
