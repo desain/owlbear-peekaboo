@@ -50,6 +50,13 @@ export function startSyncing(): [
         .then(store.updateItems);
     const unsubscribeItems = OBR.scene.items.onChange(store.updateItems);
 
+    const localItemsInitialized = OBR.scene.local
+        .getItems()
+        .then(store.updateLocalItems);
+    const unsubscribeLocalItems = OBR.scene.local.onChange(
+        store.updateLocalItems,
+    );
+
     // TODO upstream this to utils?
     function handleStorageEvent(e: StorageEvent) {
         if (e.key === usePlayerStorage.persist.getOptions().name) {
@@ -65,11 +72,13 @@ export function startSyncing(): [
             sceneReadyInitialized,
             gridInitialized,
             itemsInitialized,
+            localItemsInitialized,
         ]).then(() => void 0),
         deferCallAll(
             unsubscribeSceneReady,
             unsubscribeGrid,
             unsubscribeItems,
+            unsubscribeLocalItems,
             uninstallStorageHandler,
         ),
     ];
