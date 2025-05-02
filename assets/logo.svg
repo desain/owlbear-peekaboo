@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300">
-    <!-- Eye outline -->
-    <ellipse cx="150" cy="150" rx="120" ry="70" fill="none" stroke="#fff" stroke-width="18"/>
-    <!-- Iris outline -->
-    <circle cx="150" cy="150" r="40" fill="none" stroke="#fff" stroke-width="14"/>
-</svg>

@@ -24,6 +24,8 @@ After checkout, run `pnpm install`.
 
 This project is a Typescript app.
 
+Icons from https://game-icons.net.
+
 ## Building
 
 This project uses [pnpm](https://pnpm.io/) as a package manager.
@@ -47,6 +49,7 @@ To make a production build run:
 -   Public vis checks (interaction). Separate mode from private?
 -   Add some way to incorporate partial obstacles like tables, so that any visibility line that passes through them isn't counted as full visibility.
 -   Some kind of super clever way of keeping track of local walls and doing raycasting based on that rather than the hacky current way. https://skia.org/docs/user/modules/pathkit/ taking points from https://docs.owlbear.rodeo/extensions/reference/items/wall/?
+
 ## License
 
 GNU GPLv3

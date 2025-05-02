@@ -75,7 +75,9 @@ interface OwlbearStore {
     */
 }
 
-export const usePlayerStorage = create<LocalStorage & OwlbearStore>()(
+export interface PlayerStorage extends LocalStorage, OwlbearStore {}
+
+export const usePlayerStorage = create<PlayerStorage>()(
     subscribeWithSelector(
         persist(
             immer((set, get) => ({
