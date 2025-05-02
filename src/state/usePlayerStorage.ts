@@ -2,9 +2,19 @@ import OBR, {
     BoundingBox,
     Image,
     isImage,
+    isWall,
     Item,
     Math2,
+    Wall,
 } from "@owlbear-rodeo/sdk";
+import { featureCollection, lineString, polygon } from "@turf/turf";
+import {
+    Feature,
+    FeatureCollection,
+    LineString,
+    Polygon,
+    Position,
+} from "geojson";
 import { enableMapSet } from "immer";
 import { ExtractNonFunctions, GridParams, GridParsed } from "owlbear-utils";
 import { create } from "zustand";
@@ -13,6 +23,24 @@ import { immer } from "zustand/middleware/immer";
 import { LOCAL_STORAGE_STORE_NAME } from "../constants";
 
 enableMapSet();
+
+function wallToFeature(wall: Wall): Feature<Polygon | LineString> {
+    const coords: Position[] = wall.points.map((pt) => [pt.x, pt.y]);
+    if (coords.length === 2) {
+        return lineString(coords);
+    } else if (coords.length >= 3) {
+        // Ensure the polygon is closed
+        if (
+            coords[0][0] !== coords[coords.length - 1][0] ||
+            coords[0][1] !== coords[coords.length - 1][1]
+        ) {
+            coords.push([...coords[0]]);
+        }
+        return polygon([coords]);
+    } else {
+        throw new Error("Invalid wall: " + JSON.stringify(coords));
+    }
+}
 
 interface LocalStorage {
     readonly toolEnabled: boolean;
@@ -43,10 +71,15 @@ interface OwlbearStore {
     sceneReady: boolean;
     grid: GridParsed;
     characterBoundingBoxes: [id: string, box: BoundingBox][];
+    walls: {
+        lastModified: number;
+        geometry: FeatureCollection<Polygon | LineString>;
+    };
     setSceneReady: (this: void, sceneReady: boolean) => void;
     setGrid: (this: void, grid: GridParams) => Promise<void>;
     getGridCorners: (this: void) => number;
     updateItems: (this: void, items: Item[]) => void;
+    updateLocalItems: (this: void, items: Item[]) => void;
 
     /*
     Notes on mirroring metadata:
@@ -124,6 +157,10 @@ export const usePlayerStorage = create<PlayerStorage>()(
                     },
                 },
                 characterBoundingBoxes: [],
+                walls: {
+                    lastModified: 0,
+                    geometry: featureCollection([]),
+                },
                 setSceneReady: (sceneReady: boolean) => set({ sceneReady }),
                 setGrid: async (grid: GridParams) => {
                     const parsedScale = (await OBR.scene.grid.getScale())
@@ -154,6 +191,24 @@ export const usePlayerStorage = create<PlayerStorage>()(
                                 getBoundingBox(item, state.grid),
                             ]),
                     })),
+                updateLocalItems: (items) => {
+                    const walls = items
+                        .filter(isWall)
+                        .filter((wall) => wall.blocking);
+                    const lastModified = Math.max(
+                        ...walls.map((wall) => Date.parse(wall.lastModified)),
+                    );
+                    if (lastModified <= get().walls.lastModified) {
+                        return;
+                    }
+                    const features = walls.map(wallToFeature);
+                    return set({
+                        walls: {
+                            lastModified,
+                            geometry: featureCollection(features),
+                        },
+                    });
+                },
             })),
             {
                 name: LOCAL_STORAGE_STORE_NAME,

@@ -50,7 +50,7 @@ import {
     movePin,
     updatePin,
 } from "./Pin";
-import { doRaycast } from "./raycast";
+import { raycast } from "./raycast";
 
 export function makeIcon(position: Vector2): Image {
     const imageContent: ImageContent = {
@@ -211,7 +211,7 @@ export class VisibilityMode implements ToolMode {
     };
 
     readonly onToolDragStart = (context: ToolContext, event: ToolEvent) => {
-        console.log("onToolDragStart");
+        // console.log("onToolDragStart");
         if (isDisplayingPreviousDragState(this.#modeState)) {
             this.#modeState = stopDisplayingPreviousDrag(this.#modeState);
         }
@@ -278,10 +278,10 @@ export class VisibilityMode implements ToolMode {
     readonly onToolDragMove = (_: ToolContext, event: ToolEvent) => {
         // console.log("onToolDragMove");
         if (isInitializingDragState(this.#modeState)) {
-            console.log("onToolDragMove: initializing");
+            // console.log("onToolDragMove: initializing");
             this.#modeState.lastPointerPosition = event.pointerPosition;
         } else if (isDraggingState(this.#modeState)) {
-            console.log("onToolDragMove: dragging");
+            // console.log("onToolDragMove: dragging");
             void this.#handleDragEvent(event.pointerPosition);
         } else {
             console.warn(
@@ -310,7 +310,7 @@ export class VisibilityMode implements ToolMode {
 
             const checkCancel = this.#getCheckCancel();
 
-            const raycastResult = await doRaycast(
+            const raycastResult = await raycast(
                 this.#modeState.start,
                 this.#modeState.end,
                 checkCancel,
@@ -341,12 +341,12 @@ export class VisibilityMode implements ToolMode {
     };
 
     readonly onToolDragCancel = (_: ToolContext, event: ToolEvent) => {
-        console.log("onToolDragCancel");
+        // console.log("onToolDragCancel");
         void this.#stopCurrentState(event, false);
     };
 
     readonly onToolDragEnd = (_: ToolContext, event: ToolEvent) => {
-        console.log("onToolDragEnd");
+        // console.log("onToolDragEnd");
         void this.#stopCurrentState(event, true);
     };
 
@@ -370,7 +370,7 @@ export class VisibilityMode implements ToolMode {
     };
 
     readonly onDeactivate = () => {
-        console.log("onDeactivate");
+        // console.log("onDeactivate");
         if (isDisplayingPreviousDragState(this.#modeState)) {
             void deleteIcons(this.#modeState);
             this.#modeState = stopDisplayingPreviousDrag(this.#modeState);

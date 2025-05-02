@@ -13,7 +13,7 @@ import { usePlayerStorage } from "../state/usePlayerStorage";
 import { NOT_CANCELLABLE } from "../utils";
 import { getGridCorners } from "./gridUtils";
 import { Pin } from "./Pin";
-import { doRaycast, RaycastResult } from "./raycast";
+import { raycast, RaycastResult } from "./raycast";
 
 export type ControlItems = [
     /**
@@ -86,7 +86,7 @@ export async function makeInteractionItems(
 
     const items: ControlItems = [label, highlight, ...lines];
 
-    const raycastResult = await doRaycast(start, end, NOT_CANCELLABLE);
+    const raycastResult = await raycast(start, end, NOT_CANCELLABLE);
 
     fixControlItems(items, raycastResult);
     return items;
