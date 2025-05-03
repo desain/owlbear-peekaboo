@@ -1,5 +1,21 @@
-import type { Curve, Label, Line, Metadata } from "@owlbear-rodeo/sdk";
-import { buildCurve, buildLabel, buildLine, Math2 } from "@owlbear-rodeo/sdk";
+import type {
+    Curve,
+    Image,
+    ImageContent,
+    ImageGrid,
+    Label,
+    Line,
+    Metadata,
+    Vector2,
+} from "@owlbear-rodeo/sdk";
+import {
+    buildCurve,
+    buildImage,
+    buildLabel,
+    buildLine,
+    Math2,
+} from "@owlbear-rodeo/sdk";
+import eyeTarget from "../../assets/eye-target.svg";
 import { METADATA_KEY_IS_PEEKABOO_CONTROL } from "../constants";
 import { usePlayerStorage } from "../state/usePlayerStorage";
 import { NOT_CANCELLABLE } from "../utils";
@@ -23,6 +39,35 @@ export type ControlItems = [
     ...lines: Line[],
 ];
 
+const CONTROL_METADATA: Metadata = {
+    [METADATA_KEY_IS_PEEKABOO_CONTROL]: true,
+};
+
+export function makeIcon(position: Vector2): Image {
+    const imageContent: ImageContent = {
+        height: 150,
+        width: 150,
+        mime: "image/svg+xml",
+        url:
+            window.location.origin +
+            // import.meta.env.BASE_URL +
+            eyeTarget,
+    };
+    const imageGrid: ImageGrid = {
+        dpi: 150,
+        offset: { x: 75, y: 75 },
+    };
+    return buildImage(imageContent, imageGrid)
+        .name("Peekaboo Icon")
+        .position(position)
+        .disableHit(true)
+        .locked(true)
+        .layer("CONTROL")
+        .scale({ x: 0.6, y: 0.6 })
+        .metadata(CONTROL_METADATA)
+        .build();
+}
+
 /**
  * @returns Item temporaries (not added to OBR yet).
  */
@@ -31,9 +76,6 @@ export async function makeInteractionItems(
     end: Pin,
 ): Promise<ControlItems> {
     const state = usePlayerStorage.getState();
-    const metadata: Metadata = {
-        [METADATA_KEY_IS_PEEKABOO_CONTROL]: true,
-    };
 
     const label = buildLabel()
         .name("Peekaboo Cover Label")
@@ -43,7 +85,7 @@ export async function makeInteractionItems(
         .disableHit(true)
         .locked(true)
         .layer("CONTROL")
-        .metadata(metadata)
+        .metadata(CONTROL_METADATA)
         .build();
 
     const highlight = buildCurve()
@@ -58,7 +100,7 @@ export async function makeInteractionItems(
         .disableHit(true)
         .locked(true)
         .layer("CONTROL")
-        .metadata(metadata)
+        .metadata(CONTROL_METADATA)
         .build();
 
     const lines = Array.from(Array(state.getGridCorners()), () =>
@@ -73,7 +115,7 @@ export async function makeInteractionItems(
             .disableHit(true)
             .locked(true)
             .layer("CONTROL")
-            .metadata(metadata)
+            .metadata(CONTROL_METADATA)
             .build(),
     );
 

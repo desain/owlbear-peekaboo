@@ -1,13 +1,10 @@
 import type {
-    Image,
-    ImageContent,
-    ImageGrid,
     ToolContext,
     ToolEvent,
     ToolMode,
     Vector2,
 } from "@owlbear-rodeo/sdk";
-import OBR, { Math2, buildImage } from "@owlbear-rodeo/sdk";
+import OBR, { Math2 } from "@owlbear-rodeo/sdk";
 import type { ItemApi } from "owlbear-utils";
 import eyeTarget from "../../assets/eye-target.svg";
 
@@ -19,7 +16,11 @@ import {
 } from "../constants";
 import { CANCEL_SYMBOL, createGetCheckCancel } from "../utils";
 import type { ControlItems } from "./ControlItems";
-import { fixControlItems, makeInteractionItems } from "./ControlItems";
+import {
+    fixControlItems,
+    makeIcon,
+    makeInteractionItems,
+} from "./ControlItems";
 import type {
     DisplayPreviousDragState,
     DraggingState,
@@ -39,30 +40,6 @@ import {
 import type { LocationPin, Pin, TokenPin } from "./Pin";
 import { isLocationPin, isTokenPin, movePin, updatePin } from "./Pin";
 import { raycast } from "./raycast";
-
-export function makeIcon(position: Vector2): Image {
-    const imageContent: ImageContent = {
-        height: 150,
-        width: 150,
-        mime: "image/svg+xml",
-        url:
-            window.location.origin +
-            // import.meta.env.BASE_URL +
-            eyeTarget,
-    };
-    const imageGrid: ImageGrid = {
-        dpi: 150,
-        offset: { x: 75, y: 75 },
-    };
-    return buildImage(imageContent, imageGrid)
-        .name("Peekaboo Icon")
-        .position(position)
-        .disableHit(true)
-        .locked(true)
-        .layer("CONTROL")
-        .scale({ x: 0.6, y: 0.6 })
-        .build();
-}
 
 function getIsPrivate(context: ToolContext): boolean {
     return !!context.metadata[METADATA_KEY_TOOL_MEASURE_PRIVATE];
