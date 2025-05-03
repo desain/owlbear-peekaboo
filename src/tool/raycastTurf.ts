@@ -72,7 +72,7 @@ if (import.meta.vitest) {
             // Mock usePlayerStorage.getState to return our test walls
             vi.mock("../state/usePlayerStorage", () => ({
                 usePlayerStorage: {
-                    getState() {
+                    getState: () => {
                         return {
                             walls: {
                                 lastModified: 0,
