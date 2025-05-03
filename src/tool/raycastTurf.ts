@@ -72,25 +72,23 @@ if (import.meta.vitest) {
             // Mock usePlayerStorage.getState to return our test walls
             vi.mock("../state/usePlayerStorage", () => ({
                 usePlayerStorage: {
-                    getState: () => {
-                        return {
-                            walls: {
-                                lastModified: 0,
-                                lastIdSet: new Set<string>(),
-                                geometry: featureCollection([
-                                    polygon([
-                                        [
-                                            [0, 0],
-                                            [0, -300],
-                                            [300, -300],
-                                            [300, 0],
-                                            [0, 0],
-                                        ],
-                                    ]),
+                    getState: () => ({
+                        walls: {
+                            lastModified: 0,
+                            lastIdSet: new Set<string>(),
+                            geometry: featureCollection([
+                                polygon([
+                                    [
+                                        [0, 0],
+                                        [0, -300],
+                                        [300, -300],
+                                        [300, 0],
+                                        [0, 0],
+                                    ],
                                 ]),
-                            },
-                        };
-                    },
+                            ]),
+                        },
+                    }),
                 },
             }));
 
