@@ -50,6 +50,7 @@ To make a production build run:
     -   Block every other vision line?
 -   Turf separate imports? https://turfjs.org/docs/api/featureCollection, https://turfjs.org/docs/api/lineIntersect
 -   Combine walls? https://turfjs.org/docs/api/combine
+-   Fix literal corner case - coming in from top left corner of square lets you through
 
 ## License
 

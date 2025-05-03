@@ -1,6 +1,11 @@
 import type { BoundingBox, Image, Item, Wall } from "@owlbear-rodeo/sdk";
 import OBR, { isImage, isWall, Math2 } from "@owlbear-rodeo/sdk";
-import { featureCollection, lineString, polygon } from "@turf/turf";
+import {
+    booleanClockwise,
+    featureCollection,
+    lineString,
+    polygon,
+} from "@turf/turf";
 import type {
     Feature,
     FeatureCollection,
@@ -34,6 +39,12 @@ function wallToFeature(wall: Wall): Feature<Polygon | LineString> {
         return lineString(coords);
     } else {
         // Wall does end where it began, it's a polygon
+        if (!booleanClockwise(coords)) {
+            // Turf polygons must be counterclockwise. But the Turf Y axis
+            // points up, whereas the OBR Y axis points down, so we want the OBR
+            // polygon to point clockwise.
+            coords.reverse();
+        }
         return polygon([coords]);
     }
 }
