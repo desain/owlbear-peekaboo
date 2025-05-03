@@ -24,19 +24,17 @@ enableMapSet();
 
 function wallToFeature(wall: Wall): Feature<Polygon | LineString> {
     const coords: Position[] = wall.points.map((pt) => [pt.x, pt.y]);
-    if (coords.length === 2) {
-        return lineString(coords);
-    } else if (coords.length >= 3) {
-        // Ensure the polygon is closed
-        if (
-            coords[0][0] !== coords[coords.length - 1][0] ||
-            coords[0][1] !== coords[coords.length - 1][1]
-        ) {
-            coords.push([...coords[0]]);
-        }
-        return polygon([coords]);
-    } else {
+    if (coords.length < 2) {
         throw new Error("Invalid wall: " + JSON.stringify(coords));
+    } else if (
+        coords[0][0] !== coords[coords.length - 1][0] ||
+        coords[0][1] !== coords[coords.length - 1][1]
+    ) {
+        // Wall doesn't end where it began, it's a line
+        return lineString(coords);
+    } else {
+        // Wall does end where it began, it's a polygon
+        return polygon([coords]);
     }
 }
 
