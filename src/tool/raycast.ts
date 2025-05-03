@@ -1,7 +1,6 @@
 import type { Vector2 } from "@owlbear-rodeo/sdk";
 import { Math2 } from "@owlbear-rodeo/sdk";
 import { usePlayerStorage } from "../state/usePlayerStorage";
-import { snapToCenter } from "../utils";
 import { getGridCorners } from "./gridUtils";
 import type { Pin } from "./Pin";
 import { getPinLocation } from "./Pin";
@@ -16,16 +15,11 @@ export interface RaycastResult {
     lineColors: string[];
 }
 
-export async function raycast(
+export function raycast(
     start: Readonly<Pin>,
     end: Readonly<Pin>,
-    checkCancel: VoidFunction,
-): Promise<RaycastResult> {
-    let startPosition = getPinLocation(start);
-    if (usePlayerStorage.getState().snapOrigin) {
-        startPosition = await snapToCenter(startPosition);
-        checkCancel();
-    }
+): RaycastResult {
+    const startPosition = getPinLocation(start);
 
     const state = usePlayerStorage.getState();
     const endPosition = getPinLocation(end);

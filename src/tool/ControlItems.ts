@@ -18,7 +18,6 @@ import {
 import eyeTarget from "../../assets/eye-target.svg";
 import { METADATA_KEY_IS_PEEKABOO_CONTROL } from "../constants";
 import { usePlayerStorage } from "../state/usePlayerStorage";
-import { NOT_CANCELLABLE } from "../utils";
 import { getGridCorners } from "./gridUtils";
 import type { Pin } from "./Pin";
 import type { RaycastResult } from "./raycast";
@@ -71,10 +70,7 @@ export function makeIcon(position: Vector2): Image {
 /**
  * @returns Item temporaries (not added to OBR yet).
  */
-export async function makeInteractionItems(
-    start: Pin,
-    end: Pin,
-): Promise<ControlItems> {
+export function makeInteractionItems(start: Pin, end: Pin): ControlItems {
     const state = usePlayerStorage.getState();
 
     const label = buildLabel()
@@ -121,7 +117,7 @@ export async function makeInteractionItems(
 
     const items: ControlItems = [label, highlight, ...lines];
 
-    const raycastResult = await raycast(start, end, NOT_CANCELLABLE);
+    const raycastResult = raycast(start, end);
 
     fixControlItems(items, raycastResult);
     return items;
