@@ -1,8 +1,7 @@
 import type { Vector2 } from "@owlbear-rodeo/sdk";
 import OBR from "@owlbear-rodeo/sdk";
-import type { ItemApi } from "owlbear-utils";
+import type { AbstractInteraction, ItemApi } from "owlbear-utils";
 import { getId, isObject } from "owlbear-utils";
-import type { AbstractInteraction } from "../AbstractInteraction";
 import type { ControlItems } from "./ControlItems";
 import type { Pin } from "./Pin";
 

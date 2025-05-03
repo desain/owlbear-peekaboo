@@ -9,10 +9,11 @@ import type {
     Position,
 } from "geojson";
 import { enableMapSet } from "immer";
-import type {
-    ExtractNonFunctions,
-    GridParams,
-    GridParsed,
+import {
+    getId,
+    type ExtractNonFunctions,
+    type GridParams,
+    type GridParsed,
 } from "owlbear-utils";
 import { create } from "zustand";
 import { persist, subscribeWithSelector } from "zustand/middleware";
@@ -70,6 +71,7 @@ interface OwlbearStore {
     characterBoundingBoxes: [id: string, box: BoundingBox][];
     walls: {
         lastModified: number;
+        lastIdSet: Set<string>;
         geometry: FeatureCollection<Polygon | LineString>;
     };
     setSceneReady: (this: void, sceneReady: boolean) => void;
@@ -156,6 +158,7 @@ export const usePlayerStorage = create<PlayerStorage>()(
                 characterBoundingBoxes: [],
                 walls: {
                     lastModified: 0,
+                    lastIdSet: new Set(),
                     geometry: featureCollection([]),
                 },
                 setSceneReady: (sceneReady: boolean) => set({ sceneReady }),
@@ -189,19 +192,26 @@ export const usePlayerStorage = create<PlayerStorage>()(
                             ]),
                     })),
                 updateLocalItems: (items) => {
-                    const walls = items
-                        .filter(isWall)
-                        .filter((wall) => wall.blocking);
+                    const oldWalls = get().walls;
+                    const wallItems = items.filter(isWall);
+                    // .filter((wall) => wall.blocking); // Smoke and Spectre turns this off for GM pass
                     const lastModified = Math.max(
-                        ...walls.map((wall) => Date.parse(wall.lastModified)),
+                        ...wallItems.map((wall) =>
+                            Date.parse(wall.lastModified),
+                        ),
                     );
-                    if (lastModified <= get().walls.lastModified) {
+                    const idSet = new Set<string>(wallItems.map(getId));
+                    if (
+                        lastModified <= oldWalls.lastModified &&
+                        idSet.size === oldWalls.lastIdSet.size
+                    ) {
                         return;
                     }
-                    const features = walls.map(wallToFeature);
+                    const features = wallItems.map(wallToFeature);
                     return set({
                         walls: {
                             lastModified,
+                            lastIdSet: idSet,
                             geometry: featureCollection(features),
                         },
                     });

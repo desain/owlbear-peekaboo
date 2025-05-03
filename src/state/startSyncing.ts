@@ -1,5 +1,5 @@
 import OBR from "@owlbear-rodeo/sdk";
-import { deferCallAll } from "owlbear-utils";
+import { deferCallAll, startRehydrating } from "owlbear-utils";
 import { usePlayerStorage } from "./usePlayerStorage";
 
 const sceneReady = new Promise<void>((resolve) => {
@@ -57,15 +57,7 @@ export function startSyncing(): [
         store.updateLocalItems,
     );
 
-    // TODO upstream this to utils?
-    function handleStorageEvent(e: StorageEvent) {
-        if (e.key === usePlayerStorage.persist.getOptions().name) {
-            return usePlayerStorage.persist.rehydrate();
-        }
-    }
-    window.addEventListener("storage", handleStorageEvent);
-    const uninstallStorageHandler = () =>
-        window.removeEventListener("storage", handleStorageEvent);
+    const uninstallStorageHandler = startRehydrating(usePlayerStorage);
 
     return [
         Promise.all([

@@ -11,10 +11,7 @@ import OBR, { Math2, buildImage } from "@owlbear-rodeo/sdk";
 import type { ItemApi } from "owlbear-utils";
 import eyeTarget from "../../assets/eye-target.svg";
 
-import {
-    createLocalInteraction,
-    wrapRealInteraction,
-} from "../AbstractInteraction";
+import { createLocalInteraction, wrapRealInteraction } from "owlbear-utils";
 import {
     ID_TOOL,
     ID_TOOL_MODE_VISIBILITY,

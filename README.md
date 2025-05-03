@@ -47,8 +47,8 @@ To make a production build run:
 -   Snap start when creating it
 -   two sets of lines, white until the stop point, red after
 -   Add some way to incorporate partial obstacles like tables, so that any visibility line that passes through them isn't counted as full visibility.
-    - Use https://game-icons.net/1x1/lorc/wooden-fence.html
-    - Block every other vision line?
+    -   Use https://game-icons.net/1x1/lorc/wooden-fence.html
+    -   Block every other vision line?
 -   Delete icons when cleaning up
 -   Icon to show current version (https://game-icons.net/1x1/delapouite/info.html)
 -   Turf separate imports? https://turfjs.org/docs/api/featureCollection, https://turfjs.org/docs/api/lineIntersect
