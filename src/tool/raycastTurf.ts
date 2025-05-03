@@ -1,5 +1,12 @@
 import type { Vector2 } from "@owlbear-rodeo/sdk";
-import { distance, lineIntersect, lineString, point } from "@turf/turf";
+import {
+    distance,
+    featureCollection,
+    lineIntersect,
+    lineString,
+    point,
+    polygon,
+} from "@turf/turf";
 import { usePlayerStorage } from "../state/usePlayerStorage";
 
 export function raycastTurf(
@@ -47,5 +54,51 @@ export function raycastTurf(
             }
         }
         return closestPt ?? end;
+    });
+}
+
+if (import.meta.vitest) {
+    const { describe, it, expect, vi } = import.meta.vitest;
+    describe("raycastTurf", () => {
+        it("Should return intersections", () => {
+            const start = { x: -75, y: -225 };
+            const ends = [
+                { x: 150, y: -300 },
+                { x: 300, y: -300 },
+                { x: 300, y: -150 },
+                { x: 150, y: -150 },
+            ];
+
+            // Mock usePlayerStorage.getState to return our test walls
+            vi.mock("../state/usePlayerStorage", () => ({
+                usePlayerStorage: {
+                    getState() {
+                        return {
+                            walls: {
+                                lastModified: 0,
+                                lastIdSet: new Set<string>(),
+                                geometry: featureCollection([
+                                    polygon([
+                                        [
+                                            [0, 0],
+                                            [0, -300],
+                                            [300, -300],
+                                            [300, 0],
+                                            [0, 0],
+                                        ],
+                                    ]),
+                                ]),
+                            },
+                        };
+                    },
+                },
+            }));
+
+            const results = raycastTurf(start, ends);
+
+            results.forEach((result, i) => {
+                expect(result).not.toEqual(ends[i]);
+            });
+        });
     });
 }
