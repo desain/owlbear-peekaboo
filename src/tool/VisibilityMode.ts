@@ -14,7 +14,8 @@ import {
     ID_TOOL_MODE_VISIBILITY,
     METADATA_KEY_TOOL_MEASURE_PRIVATE,
 } from "../constants";
-import { CANCEL_SYMBOL, createGetCheckCancel } from "../utils";
+import { usePlayerStorage } from "../state/usePlayerStorage";
+import { CANCEL_SYMBOL, snapToCenter } from "../utils";
 import type { ControlItems } from "./ControlItems";
 import {
     fixControlItems,
@@ -35,7 +36,6 @@ import {
     isRememberPreviousDragState,
     stopDisplayingPreviousDrag,
     stopDragging,
-    stopInitializing,
 } from "./ModeState";
 import type { LocationPin, Pin, TokenPin } from "./Pin";
 import { isLocationPin, isTokenPin, movePin, updatePin } from "./Pin";
@@ -90,15 +90,16 @@ export class VisibilityMode implements ToolMode {
 
     readonly id = ID_TOOL_MODE_VISIBILITY;
 
-    readonly #getCheckCancel = createGetCheckCancel();
-
     /**
      * State of tool mode.
      */
     #modeState: ModeState = null;
 
-    static readonly #getStart = (event: ToolEvent): Pin => {
-        const startPosition = event.pointerPosition;
+    static readonly #getStart = async (event: ToolEvent): Promise<Pin> => {
+        let startPosition = event.pointerPosition;
+        if (usePlayerStorage.getState().snapOrigin) {
+            startPosition = await snapToCenter(startPosition);
+        }
         if (event.target && event.target.layer === "CHARACTER") {
             return {
                 id: event.target.id,
@@ -149,11 +150,7 @@ export class VisibilityMode implements ToolMode {
                 return; // state was changed from underneath us
             }
 
-            const displayItems = await makeInteractionItems(newStart, newEnd);
-            if (!isRememberPreviousDragState(this.#modeState)) {
-                return; // state was changed from underneath us
-            }
-
+            const displayItems = makeInteractionItems(newStart, newEnd);
             const itemApi = getItemApi(context);
             void itemApi.addItems(displayItems);
 
@@ -192,10 +189,7 @@ export class VisibilityMode implements ToolMode {
             return;
         }
 
-        const start = VisibilityMode.#getStart(event);
         this.#modeState = {
-            start,
-            startIconId: createPinIcon(start),
             lastPointerPosition: event.pointerPosition,
         } satisfies InitializingDragState;
 
@@ -206,14 +200,9 @@ export class VisibilityMode implements ToolMode {
         context: ToolContext,
         event: ToolEvent,
     ) => {
+        const start = await VisibilityMode.#getStart(event);
         const [initialEnd] = await movePin(null, event.pointerPosition);
-        if (!isInitializingDragState(this.#modeState)) {
-            return; // state was changed underneath us
-        }
-        const controls = await makeInteractionItems(
-            this.#modeState.start,
-            initialEnd,
-        );
+        const controls = makeInteractionItems(start, initialEnd);
         if (!isInitializingDragState(this.#modeState)) {
             return; // state was changed underneath us
         }
@@ -227,8 +216,8 @@ export class VisibilityMode implements ToolMode {
 
         const lastPointerPosition = this.#modeState.lastPointerPosition;
         this.#modeState = {
-            start: this.#modeState.start,
-            startIconId: this.#modeState.startIconId,
+            start,
+            startIconId: createPinIcon(start),
             end: initialEnd,
             endIconId: null,
             lastUpdatedItems: controls,
@@ -273,14 +262,10 @@ export class VisibilityMode implements ToolMode {
             }
             this.#modeState.end = newEnd;
 
-            const checkCancel = this.#getCheckCancel();
-
-            const raycastResult = await raycast(
+            const raycastResult = raycast(
                 this.#modeState.start,
                 this.#modeState.end,
-                checkCancel,
             );
-            checkCancel();
             if (!isDraggingState(this.#modeState)) {
                 return; // state was changed from underneath us
             }
@@ -317,7 +302,7 @@ export class VisibilityMode implements ToolMode {
 
     readonly #stopCurrentState = async (event: ToolEvent, keep: boolean) => {
         if (isInitializingDragState(this.#modeState)) {
-            this.#modeState = stopInitializing(this.#modeState);
+            this.#modeState = null;
         } else if (isDraggingState(this.#modeState)) {
             if (keep) {
                 await this.#handleDragEvent(event.pointerPosition);

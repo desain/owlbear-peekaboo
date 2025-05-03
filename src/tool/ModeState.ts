@@ -15,6 +15,11 @@ export interface RememberPreviousDragState {
     end: Pin;
     wasPrivate: boolean;
 }
+export function isRememberPreviousDragState(
+    state: ModeState,
+): state is RememberPreviousDragState {
+    return isObject(state) && "wasPrivate" in state;
+}
 
 /**
  * State for when the tool is only displaying a previous drag, but the user is not
@@ -41,18 +46,23 @@ export interface DisplayPreviousDragState {
      */
     itemApi: ItemApi;
 }
+export function isDisplayingPreviousDragState(
+    state: ModeState,
+): state is DisplayPreviousDragState {
+    return isObject(state) && "displayItems" in state;
+}
 
 /**
  * State for when the user has started dragging, but we don't have all the UI elements
  * created yet.
  */
 export interface InitializingDragState {
-    start: Pin;
-    /**
-     * ID of image item used to mark the start pin (if TokenPin).
-     */
-    startIconId: string | null;
     lastPointerPosition: Vector2;
+}
+export function isInitializingDragState(
+    state: ModeState,
+): state is InitializingDragState {
+    return isObject(state) && "lastPointerPosition" in state;
 }
 
 export interface DraggingState {
@@ -84,6 +94,9 @@ export interface DraggingState {
      */
     itemApi: ItemApi;
 }
+export function isDraggingState(state: ModeState): state is DraggingState {
+    return isObject(state) && "interaction" in state;
+}
 
 /**
  * Finite state machine of states the tool can be in.
@@ -95,20 +108,8 @@ export type ModeState =
     | InitializingDragState
     | DraggingState;
 
-export function isRememberPreviousDragState(
-    state: ModeState,
-): state is RememberPreviousDragState {
-    return isObject(state) && "wasPrivate" in state;
-}
-
-export function isDisplayingPreviousDragState(
-    state: ModeState,
-): state is DisplayPreviousDragState {
-    return isObject(state) && "displayItems" in state;
-}
-
 export async function deleteIcons(
-    state: DisplayPreviousDragState | DraggingState | InitializingDragState,
+    state: DisplayPreviousDragState | DraggingState,
 ) {
     const toDelete = [];
     if (state.startIconId) {
@@ -134,21 +135,6 @@ export function stopDisplayingPreviousDrag(
         end: state.end,
         wasPrivate: state.itemApi === OBR.scene.local, // TODO better tracking?
     };
-}
-
-export function isInitializingDragState(
-    state: ModeState,
-): state is InitializingDragState {
-    return isObject(state) && "lastPointerPosition" in state;
-}
-
-export function stopInitializing(state: InitializingDragState): null {
-    void deleteIcons(state);
-    return null;
-}
-
-export function isDraggingState(state: ModeState): state is DraggingState {
-    return isObject(state) && "interaction" in state;
 }
 
 export function stopDragging(state: DraggingState, keep: boolean): ModeState {

@@ -44,7 +44,6 @@ To make a production build run:
 
 ## To do
 
--   Snap start when creating it
 -   two sets of lines, white until the stop point, red after
 -   Add some way to incorporate partial obstacles like tables, so that any visibility line that passes through them isn't counted as full visibility.
     -   Use https://game-icons.net/1x1/lorc/wooden-fence.html
