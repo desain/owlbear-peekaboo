@@ -5,7 +5,9 @@ import {
     FormHelperText,
     Switch,
     TextField,
+    Typography,
 } from "@mui/material";
+import { version } from "../../package.json";
 import { usePlayerStorage } from "../state/usePlayerStorage";
 
 export function Settings() {
@@ -23,6 +25,7 @@ export function Settings() {
 
     return (
         <Box sx={{ p: 2, minWidth: 300 }}>
+            <Typography variant="h6">Visibility Tool Settings</Typography>
             <FormGroup sx={{ mb: 2 }}>
                 <FormControlLabel
                     control={
@@ -32,14 +35,13 @@ export function Settings() {
                         />
                     }
                     label="Snap Origins"
-                    sx={{ mb: 2 }}
                 />
                 <FormHelperText>
                     Snap the origin of visibility checks to the grid.
                 </FormHelperText>
             </FormGroup>
             <FormGroup>
-                <FormHelperText sx={{ mb: 1 }}>
+                <FormHelperText sx={{ mb: 2 }}>
                     Labels and colors for visible corners (0–{numGridCorners}
                     ):
                 </FormHelperText>
@@ -80,6 +82,13 @@ export function Settings() {
                     "3/4 cover").
                 </FormHelperText>
             </FormGroup>
+            <Typography
+                color="textSecondary"
+                variant="subtitle1"
+                sx={{ mt: 2 }}
+            >
+                Peekaboo version {version}
+            </Typography>
         </Box>
     );
 }
