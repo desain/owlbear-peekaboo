@@ -1,7 +1,7 @@
 {
   "name": "Peekaboo",
   "description": "Adds a tool to check token cover and visibility.",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "manifest_version": 1,
   "author": "desain",
   "icon": "/logo.svg",
