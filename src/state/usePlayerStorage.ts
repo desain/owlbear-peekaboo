@@ -1,18 +1,7 @@
 import type { BoundingBox, Image, Item, Wall } from "@owlbear-rodeo/sdk";
 import OBR, { isImage, isWall, Math2 } from "@owlbear-rodeo/sdk";
-import {
-    booleanClockwise,
-    featureCollection,
-    lineString,
-    polygon,
-} from "@turf/turf";
-import type {
-    Feature,
-    FeatureCollection,
-    LineString,
-    Polygon,
-    Position,
-} from "geojson";
+import { featureCollection, lineString } from "@turf/turf";
+import type { Feature, FeatureCollection, LineString, Position } from "geojson";
 import { enableMapSet } from "immer";
 import {
     getId,
@@ -27,26 +16,13 @@ import { LOCAL_STORAGE_STORE_NAME } from "../constants";
 
 enableMapSet();
 
-function wallToFeature(wall: Wall): Feature<Polygon | LineString> {
+function wallToFeature(wall: Wall): Feature<LineString> {
     const coords: Position[] = wall.points.map((pt) => [pt.x, pt.y]);
     if (coords.length < 2) {
         throw new Error("Invalid wall: " + JSON.stringify(coords));
-    } else if (
-        coords[0][0] !== coords[coords.length - 1][0] ||
-        coords[0][1] !== coords[coords.length - 1][1]
-    ) {
-        // Wall doesn't end where it began, it's a line
-        return lineString(coords);
-    } else {
-        // Wall does end where it began, it's a polygon
-        if (!booleanClockwise(coords)) {
-            // Turf polygons must be counterclockwise. But the Turf Y axis
-            // points up, whereas the OBR Y axis points down, so we want the OBR
-            // polygon to point clockwise.
-            coords.reverse();
-        }
-        return polygon([coords]);
     }
+    // Wall doesn't end where it began, it's a line
+    return lineString(coords);
 }
 
 interface LocalStorage {
@@ -81,7 +57,7 @@ interface OwlbearStore {
     walls: {
         lastModified: number;
         lastIdSet: Set<string>;
-        geometry: FeatureCollection<Polygon | LineString>;
+        geometry: FeatureCollection<LineString>;
     };
     setSceneReady: (this: void, sceneReady: boolean) => void;
     setGrid: (this: void, grid: GridParams) => Promise<void>;
