@@ -53,6 +53,7 @@ async function installTool() {
         OBR.tool.createMode(new VisibilityMode()),
         OBR.tool.createAction({
             id: ID_TOOL_ACTION_SWITCH_PRIVATE,
+            shortcut: "P",
             icons: [
                 {
                     icon: thoughtBubble,
@@ -85,6 +86,7 @@ async function installTool() {
         }),
         OBR.tool.createAction({
             id: ID_TOOL_ACTION_CLEANUP,
+            shortcut: "X",
             icons: [
                 {
                     icon: broom,
