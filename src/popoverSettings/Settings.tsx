@@ -7,21 +7,27 @@ import {
     TextField,
     Typography,
 } from "@mui/material";
+import { useRehydrate } from "owlbear-utils";
 import { version } from "../../package.json";
+import { broadcastSetCharacterPermissiveness } from "../broadcast/broadcast";
 import { usePlayerStorage } from "../state/usePlayerStorage";
 
 export function Settings() {
+    useRehydrate(usePlayerStorage);
+
     const snapOrigin = usePlayerStorage((store) => store.snapOrigin);
     const setSnapOrigin = usePlayerStorage((store) => store.setSnapOrigin);
     const numGridCorners = usePlayerStorage((store) => store.getGridCorners());
 
-    // Add storage for corner labels
     const cornerLabels = usePlayerStorage((store) => store.cornerLabels);
     const setCornerLabel = usePlayerStorage((store) => store.setCornerLabel);
 
-    // Add storage for corner colors
     const cornerColors = usePlayerStorage((store) => store.cornerColors);
     const setCornerColor = usePlayerStorage((store) => store.setCornerColor);
+
+    const characterPermissiveness = usePlayerStorage(
+        (store) => store.characterPermissiveness,
+    );
 
     return (
         <Box sx={{ p: 2, minWidth: 300 }}>
@@ -40,11 +46,30 @@ export function Settings() {
                     Snap the origin of visibility checks to the grid.
                 </FormHelperText>
             </FormGroup>
+            <FormGroup sx={{ mb: 2 }}>
+                <FormControlLabel
+                    control={
+                        <Switch
+                            checked={characterPermissiveness === 0.5}
+                            onChange={(e) =>
+                                broadcastSetCharacterPermissiveness(
+                                    e.target.checked ? 0.5 : 1,
+                                )
+                            }
+                        />
+                    }
+                    label="Characters are partial obstructions"
+                />
+                <FormHelperText>
+                    If enabled, characters will count as partial obstructions
+                    for visibility.
+                </FormHelperText>
+            </FormGroup>
             <FormGroup>
-                <FormHelperText sx={{ mb: 2 }}>
+                <Typography sx={{ mb: 2 }}>
                     Labels and colors for visible corners (0–{numGridCorners}
                     ):
-                </FormHelperText>
+                </Typography>
                 {[...Array(numGridCorners + 1).keys()].map((n) => (
                     <Box
                         key={n}

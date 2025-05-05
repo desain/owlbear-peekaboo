@@ -38,12 +38,19 @@ export function isTokenPin(pin: unknown): pin is TokenPin {
 
 export type Pin = LocationPin | TokenPin;
 
-export function getPinLocation(pin: Pin): Vector2 {
+export function getPinLocation(pin: Readonly<Pin>): Vector2 {
     if (isLocationPin(pin)) {
         return pin.position;
     } else {
         return Math2.add(pin.cachedPosition, pin.offset);
     }
+}
+
+export function getPinId(pin: Readonly<Pin>): string | undefined {
+    if (isTokenPin(pin)) {
+        return pin.id;
+    }
+    return undefined;
 }
 
 export async function updatePin(pin: Pin): Promise<Pin> {

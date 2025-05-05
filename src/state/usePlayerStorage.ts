@@ -16,13 +16,39 @@ import { LOCAL_STORAGE_STORE_NAME } from "../constants";
 
 enableMapSet();
 
-function wallToFeature(wall: Wall): Feature<LineString> {
+export interface PartialObstructionProperties {
+    /**
+     * If set, the partial obstruction is a character token.
+     */
+    characterId?: string;
+    /**
+     * How much the obstruction lets the line through. 0 = total
+     * blockage, 1 = no obstruction.
+     */
+    permissiveness: number;
+}
+
+function wallToLineString(wall: Readonly<Wall>): Feature<LineString> {
     const coords: Position[] = wall.points.map((pt) => [pt.x, pt.y]);
     if (coords.length < 2) {
         throw new Error("Invalid wall: " + JSON.stringify(coords));
     }
-    // Wall doesn't end where it began, it's a line
     return lineString(coords);
+}
+
+function boundingBoxToLineString(
+    box: Readonly<BoundingBox>,
+    properties: PartialObstructionProperties,
+): Feature<LineString, PartialObstructionProperties> {
+    const { min, max } = box;
+    const corners: Position[] = [
+        [min.x, min.y],
+        [max.x, min.y],
+        [max.x, max.y],
+        [min.x, max.y],
+        [min.x, min.y],
+    ];
+    return lineString(corners, properties);
 }
 
 interface LocalStorage {
@@ -36,18 +62,27 @@ interface LocalStorage {
      * What color to show based on how many corners are visible.
      */
     readonly cornerColors: Partial<Record<number, string>>;
+    readonly characterPermissiveness: number;
     setToolEnabled(this: void, toolEnabled: boolean): void;
     setSnapOrigin(this: void, snapOrigin: boolean): void;
     setCornerLabel(this: void, index: number, value: string): void;
     setCornerColor(this: void, index: number, value: string): void;
+    setCharacterPermissiveness(this: void, value: number): void;
 }
 function partializeLocalStorage({
     toolEnabled,
     snapOrigin,
     cornerLabels,
     cornerColors,
+    characterPermissiveness,
 }: LocalStorage): ExtractNonFunctions<LocalStorage> {
-    return { toolEnabled, snapOrigin, cornerLabels, cornerColors };
+    return {
+        toolEnabled,
+        snapOrigin,
+        cornerLabels,
+        cornerColors,
+        characterPermissiveness,
+    };
 }
 
 interface OwlbearStore {
@@ -56,9 +91,13 @@ interface OwlbearStore {
     characterBoundingBoxes: [id: string, box: BoundingBox][];
     walls: {
         lastModified: number;
-        lastIdSet: Set<string>;
+        lastIdSetSize: number;
         geometry: FeatureCollection<LineString>;
     };
+    partialObstructions: FeatureCollection<
+        LineString,
+        PartialObstructionProperties
+    >;
     setSceneReady: (this: void, sceneReady: boolean) => void;
     setGrid: (this: void, grid: GridParams) => Promise<void>;
     getGridCorners: (this: void) => number;
@@ -117,6 +156,7 @@ export const usePlayerStorage = create<PlayerStorage>()(
                     "#64d364",
                     "#49dd49",
                 ],
+                characterPermissiveness: 0.5,
                 setToolEnabled: (toolEnabled) => set({ toolEnabled }),
                 setSnapOrigin: (snapOrigin) => set({ snapOrigin }),
                 setCornerLabel: (index, value) =>
@@ -126,6 +166,17 @@ export const usePlayerStorage = create<PlayerStorage>()(
                 setCornerColor: (index, value) =>
                     set((state) => {
                         state.cornerColors[index] = value;
+                    }),
+                setCharacterPermissiveness: (characterPermissiveness) =>
+                    set((state) => {
+                        state.characterPermissiveness = characterPermissiveness;
+                        for (const partialObstruction of state
+                            .partialObstructions.features) {
+                            if (partialObstruction.properties.characterId) {
+                                partialObstruction.properties.permissiveness =
+                                    characterPermissiveness;
+                            }
+                        }
                     }),
 
                 // owlbear store
@@ -143,9 +194,10 @@ export const usePlayerStorage = create<PlayerStorage>()(
                 characterBoundingBoxes: [],
                 walls: {
                     lastModified: 0,
-                    lastIdSet: new Set(),
+                    lastIdSetSize: 0,
                     geometry: featureCollection([]),
                 },
+                partialObstructions: featureCollection([]),
                 setSceneReady: (sceneReady: boolean) => set({ sceneReady }),
                 setGrid: async (grid: GridParams) => {
                     const parsedScale = (await OBR.scene.grid.getScale())
@@ -167,19 +219,35 @@ export const usePlayerStorage = create<PlayerStorage>()(
                         : 4;
                 },
                 updateItems: (items) =>
-                    set((state) => ({
-                        characterBoundingBoxes: items
+                    set((state) => {
+                        const characterBoundingBoxes = items
                             .filter(isImage)
                             .filter((item) => item.layer === "CHARACTER")
-                            .map((item) => [
-                                item.id,
-                                getBoundingBox(item, state.grid),
-                            ]),
-                    })),
+                            .map(
+                                (item) =>
+                                    [
+                                        item.id,
+                                        getBoundingBox(item, state.grid),
+                                    ] as const,
+                            );
+                        const obstructionFeatures: Feature<
+                            LineString,
+                            PartialObstructionProperties
+                        >[] = characterBoundingBoxes.map(([id, box]) =>
+                            boundingBoxToLineString(box, {
+                                characterId: id,
+                                permissiveness: state.characterPermissiveness,
+                            }),
+                        );
+                        return {
+                            characterBoundingBoxes,
+                            partialObstructions:
+                                featureCollection(obstructionFeatures),
+                        };
+                    }),
                 updateLocalItems: (items) => {
                     const oldWalls = get().walls;
                     const wallItems = items.filter(isWall);
-                    // .filter((wall) => wall.blocking); // Smoke and Spectre turns this off for GM pass
                     const lastModified = Math.max(
                         ...wallItems.map((wall) =>
                             Date.parse(wall.lastModified),
@@ -188,15 +256,15 @@ export const usePlayerStorage = create<PlayerStorage>()(
                     const idSet = new Set<string>(wallItems.map(getId));
                     if (
                         lastModified <= oldWalls.lastModified &&
-                        idSet.size === oldWalls.lastIdSet.size
+                        idSet.size === oldWalls.lastIdSetSize
                     ) {
                         return;
                     }
-                    const features = wallItems.map(wallToFeature);
+                    const features = wallItems.map(wallToLineString);
                     return set({
                         walls: {
                             lastModified,
-                            lastIdSet: idSet,
+                            lastIdSetSize: idSet.size,
                             geometry: featureCollection(features),
                         },
                     });

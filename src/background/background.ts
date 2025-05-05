@@ -1,17 +1,13 @@
 import OBR from "@owlbear-rodeo/sdk";
 import { deferCallAll } from "owlbear-utils";
 import { version } from "../../package.json";
+import { installBroadcastListener } from "../broadcast/broadcast";
 import { startSyncing } from "../state/startSyncing";
 import { startWatchingToolEnabled } from "../tool/tool";
 
 let uninstall: VoidFunction = () => {
     // nothing to uninstall by default
 };
-
-// function installBroadcastListener() {
-//     return OBR.broadcast.onMessage(MESSAGE_CHANNEL, ({ data }) => {
-//     });
-// }
 
 async function installExtension(): Promise<VoidFunction> {
     console.log(`Peekaboo version ${version}`);
@@ -20,12 +16,13 @@ async function installExtension(): Promise<VoidFunction> {
     await storeInitialized;
     const stopWatchingTool = await startWatchingToolEnabled();
     // const stopWatchingContextMenu = await startWatchingContextMenuEnabled();
-    // const uninstallBroadcastListener = installBroadcastListener();
+    const uninstallBroadcastListener = installBroadcastListener();
 
     return deferCallAll(
         () => console.log("Uninstalling Peekaboo"),
         stopSyncing,
         stopWatchingTool,
+        uninstallBroadcastListener,
         // stopWatchingContextMenu,
         // uninstallBroadcastListener,
     );
