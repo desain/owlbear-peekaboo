@@ -5,7 +5,6 @@ import type {
     ImageGrid,
     Label,
     Line,
-    Metadata,
     Vector2,
 } from "@owlbear-rodeo/sdk";
 import {
@@ -16,7 +15,7 @@ import {
     Math2,
 } from "@owlbear-rodeo/sdk";
 import eyeTarget from "../../assets/eye-target.svg";
-import { METADATA_KEY_IS_PEEKABOO_CONTROL } from "../constants";
+import { CONTROL_METADATA } from "../constants";
 import { usePlayerStorage } from "../state/usePlayerStorage";
 import { getGridCorners } from "./gridUtils";
 import type { Pin } from "./Pin";
@@ -38,14 +37,11 @@ export type ControlItems = [
     ...lines: Line[],
 ];
 
-const CONTROL_METADATA: Metadata = {
-    [METADATA_KEY_IS_PEEKABOO_CONTROL]: true,
-};
-
 export function makeIcon(position: Vector2): Image {
+    const size = 150;
     const imageContent: ImageContent = {
-        height: 150,
-        width: 150,
+        height: size,
+        width: size,
         mime: "image/svg+xml",
         url:
             window.location.origin +
@@ -53,8 +49,8 @@ export function makeIcon(position: Vector2): Image {
             eyeTarget,
     };
     const imageGrid: ImageGrid = {
-        dpi: 150,
-        offset: { x: 75, y: 75 },
+        dpi: size,
+        offset: { x: size / 2, y: size / 2 },
     };
     return buildImage(imageContent, imageGrid)
         .name("Peekaboo Icon")
@@ -75,7 +71,6 @@ export function makeInteractionItems(start: Pin, end: Pin): ControlItems {
 
     const label = buildLabel()
         .name("Peekaboo Cover Label")
-        // .fontSize(Math.max(18, dpi / 5))
         .pointerHeight(10)
         .pointerWidth(10)
         .disableHit(true)
@@ -86,9 +81,7 @@ export function makeInteractionItems(start: Pin, end: Pin): ControlItems {
 
     const highlight = buildCurve()
         .name("Peekaboo Cell Highlight")
-        // .fillColor(color)
         .fillOpacity(0.2)
-        // .strokeColor(color)
         .strokeOpacity(1)
         .strokeWidth(5)
         .tension(0)
@@ -102,12 +95,9 @@ export function makeInteractionItems(start: Pin, end: Pin): ControlItems {
     const lines = Array.from(Array(state.getGridCorners()), () =>
         buildLine()
             .name("Peekaboo Visibility Line")
-            // .strokeColor(color)
             .strokeWidth(10)
             .strokeOpacity(0.6)
             .strokeDash([1, 30])
-            // .startPosition(start)
-            // .endPosition(end)
             .disableHit(true)
             .locked(true)
             .layer("CONTROL")

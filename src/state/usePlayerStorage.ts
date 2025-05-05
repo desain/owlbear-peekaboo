@@ -1,5 +1,5 @@
 import type { BoundingBox, Image, Item, Wall } from "@owlbear-rodeo/sdk";
-import OBR, { isImage, isWall, Math2 } from "@owlbear-rodeo/sdk";
+import OBR, { isWall, Math2 } from "@owlbear-rodeo/sdk";
 import { featureCollection, lineString } from "@turf/turf";
 import type { Feature, FeatureCollection, LineString, Position } from "geojson";
 import { enableMapSet } from "immer";
@@ -12,7 +12,13 @@ import {
 import { create } from "zustand";
 import { persist, subscribeWithSelector } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
-import { LOCAL_STORAGE_STORE_NAME } from "../constants";
+import {
+    LOCAL_STORAGE_STORE_NAME,
+    METADATA_KEY_CURVE_PERMISSIVENESS,
+} from "../constants";
+import type { ObstructionPolygonCandidate } from "../SharpObstructionPolygon";
+import { isSharpObstructionPolygon } from "../SharpObstructionPolygon";
+import { isToken } from "../Token";
 
 enableMapSet();
 
@@ -27,6 +33,7 @@ export interface PartialObstructionProperties {
      */
     permissiveness: number;
 }
+type ObstructionFeature = Feature<LineString, PartialObstructionProperties>;
 
 function wallToLineString(wall: Readonly<Wall>): Feature<LineString> {
     const coords: Position[] = wall.points.map((pt) => [pt.x, pt.y]);
@@ -39,7 +46,7 @@ function wallToLineString(wall: Readonly<Wall>): Feature<LineString> {
 function boundingBoxToLineString(
     box: Readonly<BoundingBox>,
     properties: PartialObstructionProperties,
-): Feature<LineString, PartialObstructionProperties> {
+): ObstructionFeature {
     const { min, max } = box;
     const corners: Position[] = [
         [min.x, min.y],
@@ -49,6 +56,20 @@ function boundingBoxToLineString(
         [min.x, min.y],
     ];
     return lineString(corners, properties);
+}
+
+function polygonToLineString(
+    polygon: ObstructionPolygonCandidate,
+    properties: PartialObstructionProperties,
+): ObstructionFeature {
+    const points = polygon.points.map((point) => {
+        const { x, y } = Math2.add(polygon.position, point);
+        return [x, y];
+    });
+    // OBR polygons auto-close, so add a final line back
+    // to the starting point.
+    points.push(points[0]);
+    return lineString(points, properties);
 }
 
 interface LocalStorage {
@@ -221,8 +242,7 @@ export const usePlayerStorage = create<PlayerStorage>()(
                 updateItems: (items) =>
                     set((state) => {
                         const characterBoundingBoxes = items
-                            .filter(isImage)
-                            .filter((item) => item.layer === "CHARACTER")
+                            .filter(isToken)
                             .map(
                                 (item) =>
                                     [
@@ -230,19 +250,30 @@ export const usePlayerStorage = create<PlayerStorage>()(
                                         getBoundingBox(item, state.grid),
                                     ] as const,
                             );
-                        const obstructionFeatures: Feature<
-                            LineString,
-                            PartialObstructionProperties
-                        >[] = characterBoundingBoxes.map(([id, box]) =>
-                            boundingBoxToLineString(box, {
-                                characterId: id,
-                                permissiveness: state.characterPermissiveness,
-                            }),
-                        );
+                        const tokenObstructionFeatures: ObstructionFeature[] =
+                            characterBoundingBoxes.map(([id, box]) =>
+                                boundingBoxToLineString(box, {
+                                    characterId: id,
+                                    permissiveness:
+                                        state.characterPermissiveness,
+                                }),
+                            );
+                        const polygonObstructionFeatures = items
+                            .filter(isSharpObstructionPolygon)
+                            .map((polygon) =>
+                                polygonToLineString(polygon, {
+                                    permissiveness:
+                                        polygon.metadata[
+                                            METADATA_KEY_CURVE_PERMISSIVENESS
+                                        ],
+                                }),
+                            );
                         return {
                             characterBoundingBoxes,
-                            partialObstructions:
-                                featureCollection(obstructionFeatures),
+                            partialObstructions: featureCollection([
+                                ...tokenObstructionFeatures,
+                                ...polygonObstructionFeatures,
+                            ]),
                         };
                     }),
                 updateLocalItems: (items) => {

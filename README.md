@@ -56,7 +56,7 @@ To make a production build run:
         -   When hover over a polygon, show icon (set or unset)
         -   When click on polygon, set. When click again, unset
         -   TODO: how to set different types of partial cover
-        -   TODO: clicking on the map starts a new polygon?
+        -   TODO: clicking on the map starts a new polygon? Label above start point saying "Finish" which closes it. Esc = cancel, enter = finish.
 -   Turf separate imports? https://turfjs.org/docs/api/featureCollection, https://turfjs.org/docs/api/lineIntersect
 -   Combine walls? https://turfjs.org/docs/api/combine
 
