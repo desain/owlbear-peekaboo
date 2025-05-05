@@ -63,6 +63,8 @@ function createPinIcon(pin: Pin): string | null {
 }
 
 export class VisibilityMode implements ToolMode {
+    readonly id = ID_TOOL_MODE_VISIBILITY;
+    readonly shortcut = "V";
     readonly cursors = [
         {
             cursor: "cell",
@@ -77,7 +79,6 @@ export class VisibilityMode implements ToolMode {
         },
         { cursor: "crosshair" },
     ];
-
     readonly icons = [
         {
             icon: eyeTarget,
@@ -87,8 +88,6 @@ export class VisibilityMode implements ToolMode {
             },
         },
     ];
-
-    readonly id = ID_TOOL_MODE_VISIBILITY;
 
     /**
      * State of tool mode.
