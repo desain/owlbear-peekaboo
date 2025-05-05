@@ -14,3 +14,6 @@ export const METADATA_KEY_IS_PEEKABOO_CONTROL = `${PLUGIN_ID}/isControl`;
 
 // Popover
 export const ID_POPOVER_SETTINGS = `${PLUGIN_ID}/popoverSettings`;
+
+// Broadcast
+export const CHANNEL_MESSAGES = `${PLUGIN_ID}/messages`;

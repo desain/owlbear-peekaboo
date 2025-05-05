@@ -3,8 +3,11 @@ import { Math2 } from "@owlbear-rodeo/sdk";
 import { usePlayerStorage } from "../state/usePlayerStorage";
 import { getGridCorners } from "./gridUtils";
 import type { Pin } from "./Pin";
-import { getPinLocation } from "./Pin";
-import { raycastTurf } from "./raycastTurf";
+import { getPinId, getPinLocation } from "./Pin";
+import {
+    findBlockingPoint,
+    partialObstructionPermissiveness,
+} from "./raycastTurf";
 
 export interface RaycastResult {
     startPosition: Vector2;
@@ -24,17 +27,33 @@ export function raycast(
     const state = usePlayerStorage.getState();
     const endPosition = getPinLocation(end);
     const corners = getGridCorners(endPosition, state.grid);
-    const collidedPositions = raycastTurf(startPosition, corners);
+    const collidedPositions = corners.map((corner) =>
+        findBlockingPoint(state, startPosition, corner),
+    );
+    const originId = getPinId(start);
+    const destinationId = getPinId(end);
 
-    const castResults = collidedPositions.map((endpoint, i) =>
-        Math2.compare(endpoint, corners[i], 0.1),
-    );
-    const numCastsSucceeded = castResults.reduce((a, v) => a + Number(v), 0);
-    const highlightColor = state.cornerColors[numCastsSucceeded] ?? "#cccccc";
-    const labelText = state.cornerLabels[numCastsSucceeded] ?? "";
-    const lineColors = castResults.map((castResult) =>
-        castResult ? "#ffffff" : "#ff0000",
-    );
+    let numCastsSucceeded = 0;
+    const lineColors: string[] = [];
+    collidedPositions.forEach((endpoint, i) => {
+        if (Math2.compare(endpoint, corners[i], 0.1)) {
+            const permissiveness = partialObstructionPermissiveness(
+                state,
+                startPosition,
+                corners[i],
+                originId,
+                destinationId,
+            );
+            numCastsSucceeded += permissiveness;
+            lineColors.push(permissiveness === 1 ? "#ffffff" : "#ffff00");
+        } else {
+            lineColors.push("#ff0000");
+        }
+    });
+
+    const highlightColor =
+        state.cornerColors[Math.floor(numCastsSucceeded)] ?? "#cccccc";
+    const labelText = state.cornerLabels[Math.floor(numCastsSucceeded)] ?? "";
 
     return {
         startPosition,

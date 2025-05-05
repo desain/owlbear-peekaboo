@@ -6,6 +6,6 @@ export async function openSettings() {
         id: ID_POPOVER_SETTINGS,
         url: "/src/popoverSettings/popoverSettings.html",
         width: 400,
-        height: 600,
+        height: 650,
     });
 }
