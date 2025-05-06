@@ -82,11 +82,16 @@ interface LocalStorage {
      */
     readonly cornerColors: Partial<Record<number, string>>;
     readonly characterPermissiveness: number;
+    /**
+     * If true, right-click context menu for converting polygons is enabled.
+     */
+    readonly contextMenuEnabled: boolean;
     setToolEnabled(this: void, toolEnabled: boolean): void;
     setSnapOrigin(this: void, snapOrigin: boolean): void;
     setCornerLabel(this: void, index: number, value: string): void;
     setCornerColor(this: void, index: number, value: string): void;
     setCharacterPermissiveness(this: void, value: number): void;
+    setContextMenuEnabled(this: void, contextMenuEnabled: boolean): void;
 }
 function partializeLocalStorage({
     toolEnabled,
@@ -94,6 +99,7 @@ function partializeLocalStorage({
     cornerLabels,
     cornerColors,
     characterPermissiveness,
+    contextMenuEnabled,
 }: LocalStorage): ExtractNonFunctions<LocalStorage> {
     return {
         toolEnabled,
@@ -101,6 +107,7 @@ function partializeLocalStorage({
         cornerLabels,
         cornerColors,
         characterPermissiveness,
+        contextMenuEnabled,
     };
 }
 
@@ -176,6 +183,7 @@ export const usePlayerStorage = create<PlayerStorage>()(
                     "#49dd49",
                 ],
                 characterPermissiveness: 0.5,
+                contextMenuEnabled: false,
                 setToolEnabled: (toolEnabled) => set({ toolEnabled }),
                 setSnapOrigin: (snapOrigin) => set({ snapOrigin }),
                 setCornerLabel: (index, value) =>
@@ -197,6 +205,8 @@ export const usePlayerStorage = create<PlayerStorage>()(
                             }
                         }
                     }),
+                setContextMenuEnabled: (contextMenuEnabled) =>
+                    set({ contextMenuEnabled }),
 
                 // owlbear store
                 sceneReady: false,

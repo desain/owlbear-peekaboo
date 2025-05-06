@@ -26,3 +26,7 @@ export const ID_POPOVER_SETTINGS = `${PLUGIN_ID}/popoverSettings`;
 
 // Broadcast
 export const CHANNEL_MESSAGES = `${PLUGIN_ID}/messages`;
+
+// Context menu
+export const ID_CONTEXT_MENU_CONVERT = `${PLUGIN_ID}/contextMenuConvert`;
+export const ID_CONTEXT_MENU_REMOVE = `${PLUGIN_ID}/contextMenuRemove`;
