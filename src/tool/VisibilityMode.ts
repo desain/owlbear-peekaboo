@@ -15,7 +15,7 @@ import {
     METADATA_KEY_TOOL_MEASURE_PRIVATE,
 } from "../constants";
 import { usePlayerStorage } from "../state/usePlayerStorage";
-import { CANCEL_SYMBOL, snapToCenter } from "../utils";
+import { snapToCenter } from "../utils";
 import type { ControlItems } from "./ControlItems";
 import {
     fixControlItems,
@@ -245,48 +245,40 @@ export class VisibilityMode implements ToolMode {
     };
 
     readonly #handleDragEvent = async (newPointerPosition: Vector2) => {
-        try {
-            if (!isDraggingState(this.#modeState)) {
-                return; // state was changed from underneath us
-            }
-            const [newEnd, changedEnd] = await movePin(
-                this.#modeState.end,
-                newPointerPosition,
-            );
-            if (!changedEnd) {
-                return;
-            }
-            if (!isDraggingState(this.#modeState)) {
-                return; // state was changed from underneath us
-            }
-            this.#modeState.end = newEnd;
-
-            const raycastResult = raycast(
-                this.#modeState.start,
-                this.#modeState.end,
-            );
-            if (!isDraggingState(this.#modeState)) {
-                return; // state was changed from underneath us
-            }
-
-            const lastUpdatedItems = await this.#modeState.interaction.update(
-                (items) => {
-                    fixControlItems(items, raycastResult);
-                },
-            );
-            if (!isDraggingState(this.#modeState)) {
-                return; // state was changed from underneath us
-            }
-
-            VisibilityMode.#fixEndIcon(newEnd, this.#modeState);
-            this.#modeState.lastUpdatedItems = lastUpdatedItems;
-        } catch (e) {
-            if (e === CANCEL_SYMBOL) {
-                return;
-            } else {
-                throw e;
-            }
+        if (!isDraggingState(this.#modeState)) {
+            return; // state was changed from underneath us
         }
+        const [newEnd, changedEnd] = await movePin(
+            this.#modeState.end,
+            newPointerPosition,
+        );
+        if (!changedEnd) {
+            return;
+        }
+        if (!isDraggingState(this.#modeState)) {
+            return; // state was changed from underneath us
+        }
+        this.#modeState.end = newEnd;
+
+        const raycastResult = raycast(
+            this.#modeState.start,
+            this.#modeState.end,
+        );
+        if (!isDraggingState(this.#modeState)) {
+            return; // state was changed from underneath us
+        }
+
+        const lastUpdatedItems = await this.#modeState.interaction.update(
+            (items) => {
+                fixControlItems(items, raycastResult);
+            },
+        );
+        if (!isDraggingState(this.#modeState)) {
+            return; // state was changed from underneath us
+        }
+
+        VisibilityMode.#fixEndIcon(newEnd, this.#modeState);
+        this.#modeState.lastUpdatedItems = lastUpdatedItems;
     };
 
     readonly onToolDragCancel = (_: ToolContext, event: ToolEvent) => {

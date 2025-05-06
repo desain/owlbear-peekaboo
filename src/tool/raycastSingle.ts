@@ -1,39 +1,94 @@
 import { Math2, type Vector2 } from "@owlbear-rodeo/sdk";
-import { featureCollection, lineIntersect, lineString } from "@turf/turf";
+import {
+    featureCollection,
+    lineIntersect,
+    lineString,
+    point,
+} from "@turf/turf";
+import type { FeatureCollection, Point } from "geojson";
+import { matrixMultiply } from "owlbear-utils";
 import type { PlayerStorage } from "../state/usePlayerStorage";
+import type { RaycastObstruction } from "../utils";
+import { isRaycastCircle, vector2ToPosition } from "../utils";
 
-export function findBlockingPoint(
-    state: PlayerStorage,
-    origin: Readonly<Vector2>,
-    end: Readonly<Vector2>,
-): Vector2 {
-    const ray = lineString([
-        [origin.x, origin.y],
-        [end.x, end.y],
-    ]);
-    let closestPt: Vector2 | null = null;
-    let minDist = Infinity;
-    for (const wall of state.walls.geometry.features) {
-        const intersections = lineIntersect(ray, wall.geometry);
-        for (const feat of intersections.features) {
-            const [x, y] = feat.geometry.coordinates;
-            const pt = { x, y };
-            const d = Math2.distance(origin, pt);
-            if (d < minDist) {
-                minDist = d;
-                closestPt = pt;
-            }
-        }
+/**
+ * Find intercepts with a circle centered on the origin.
+ * https://stackoverflow.com/questions/37224912/circle-line-segment-collision
+ */
+function interceptCircleLineSeg(
+    radius: number,
+    p1: Vector2,
+    p2: Vector2,
+): Vector2[] {
+    const v1 = { x: p2.x - p1.x, y: p2.y - p1.y };
+    const v2 = { x: p1.x, y: p1.y };
+    const b = (v1.x * v2.x + v1.y * v2.y) * -2;
+    const c = 2 * (v1.x * v1.x + v1.y * v1.y);
+    const d = Math.sqrt(
+        b * b - 2 * c * (v2.x * v2.x + v2.y * v2.y - radius * radius),
+    );
+    if (isNaN(d)) {
+        // no intercept
+        return [];
     }
-    return closestPt ?? end;
+    const u1 = (b - d) / c; // these represent the unit distance of point one and two on the line
+    const u2 = (b + d) / c;
+    const ret: Vector2[] = []; // return array
+    if (u1 <= 1 && u1 >= 0) {
+        // add point if on the line segment
+        ret.push({ x: p1.x + v1.x * u1, y: p1.y + v1.y * u1 });
+    }
+    if (u2 <= 1 && u2 >= 0) {
+        // second add point if on the line segment
+        ret.push({ x: p1.x + v1.x * u2, y: p1.y + v1.y * u2 });
+    }
+    return ret;
+}
+
+function intersect(
+    start: Readonly<Vector2>,
+    end: Readonly<Vector2>,
+    obstruction: RaycastObstruction,
+): FeatureCollection<Point> {
+    if (isRaycastCircle(obstruction)) {
+        const circleSpaceStart = matrixMultiply(
+            obstruction.inverseTransformCache,
+            start,
+        );
+        const circleSpaceEnd = matrixMultiply(
+            obstruction.inverseTransformCache,
+            end,
+        );
+        const circleSpaceIntersections = interceptCircleLineSeg(
+            obstruction.radius,
+            circleSpaceStart,
+            circleSpaceEnd,
+        );
+        return featureCollection(
+            circleSpaceIntersections.map((pt) =>
+                point(
+                    vector2ToPosition(
+                        matrixMultiply(obstruction.transform, pt),
+                    ),
+                ),
+            ),
+        );
+    } else {
+        const ray = lineString([
+            [start.x, start.y],
+            [end.x, end.y],
+        ]);
+        return lineIntersect(ray, obstruction);
+    }
 }
 
 /**
- * @returns Permissiveness of line given partial obstructions. 1 for no obstruction, less for partial obstruction.
+ * @return Closest blocking point if the ray was blocked, or permissiveness if the ray
+ *         was partially blocked. Permissiveness 1 means unblocked.
  */
-export function partialObstructionPermissiveness(
+export function raycastSingle(
     state: PlayerStorage,
-    origin: Readonly<Vector2>,
+    start: Readonly<Vector2>,
     end: Readonly<Vector2>,
     /**
      * ID of origin obstruction. Ignored because lines coming from origin won't be
@@ -45,12 +100,33 @@ export function partialObstructionPermissiveness(
      * blocked by destination.
      */
     destinationId?: string,
-): number {
-    const ray = lineString([
-        [origin.x, origin.y],
-        [end.x, end.y],
-    ]);
-    const blockingObstruction = state.partialObstructions.features.find(
+): Vector2 | number {
+    // Check for blocking obstructions
+    let closestPt: Vector2 | null = null;
+    let minDist = Infinity;
+    for (const wall of state.walls.geometry.features) {
+        // TODO use single intersect for both
+        const ray = lineString([
+            [start.x, start.y],
+            [end.x, end.y],
+        ]);
+        const intersections = lineIntersect(ray, wall.geometry);
+        for (const feat of intersections.features) {
+            const [x, y] = feat.geometry.coordinates;
+            const pt = { x, y };
+            const d = Math2.distance(start, pt);
+            if (d < minDist) {
+                minDist = d;
+                closestPt = pt;
+            }
+        }
+    }
+    if (closestPt) {
+        return closestPt;
+    }
+
+    // Check for partial obstructions
+    const blockingObstruction = state.partialObstructions.find(
         (obstruction) => {
             // Skip obstructions corresponding to the origin or destination
             if (
@@ -60,7 +136,7 @@ export function partialObstructionPermissiveness(
             ) {
                 return false;
             }
-            const intersections = lineIntersect(ray, obstruction.geometry);
+            const intersections = intersect(start, end, obstruction);
             // Filter out intersections that are exactly at the origin or end
             const filteredIntersections = intersections.features.filter(
                 ({
@@ -68,27 +144,27 @@ export function partialObstructionPermissiveness(
                         coordinates: [x, y],
                     },
                 }) =>
-                    (x !== origin.x || y !== origin.y) &&
+                    (x !== start.x || y !== start.y) &&
                     (x !== end.x || y !== end.y),
             );
             if (filteredIntersections.length === 0) {
                 return false;
             }
-            // console.log(origin, end, obstruction.geometry);
             return true;
         },
     );
+
     return blockingObstruction?.properties.permissiveness ?? 1;
 }
 
 if (import.meta.vitest) {
     const { describe, it, expect } = import.meta.vitest;
 
-    describe("partialObstructionPermissiveness", () => {
+    describe("raycastSingle", () => {
         it("Shouldn't self-interfere", () => {
             const MOCK_ID = "mock-id";
             const state: PlayerStorage = {
-                partialObstructions: featureCollection([
+                partialObstructions: [
                     // Square to the top right of the origin
                     lineString(
                         [
@@ -103,26 +179,21 @@ if (import.meta.vitest) {
                             permissiveness: 0.5,
                         },
                     ),
-                ]),
+                ],
             } as PlayerStorage;
 
             // start in the center and go straight right, through the square
             const start = { x: 75, y: 75 };
             const end = { x: 200, y: 75 };
 
-            const result = partialObstructionPermissiveness(
-                state,
-                start,
-                end,
-                MOCK_ID,
-            );
+            const result = raycastSingle(state, start, end, MOCK_ID);
             expect(result).toEqual(1);
         });
 
         it("Shouldn't let the destination interfere", () => {
             const MOCK_ID = "mock-id";
             const state: PlayerStorage = {
-                partialObstructions: featureCollection([
+                partialObstructions: [
                     // Square to the top right of the origin
                     lineString(
                         [
@@ -137,26 +208,20 @@ if (import.meta.vitest) {
                             permissiveness: 0.5,
                         },
                     ),
-                ]),
+                ],
             } as PlayerStorage;
 
             // start from outside the square and go in
             const start = { x: -75, y: -75 };
             const end = { x: 75, y: 75 };
 
-            const result = partialObstructionPermissiveness(
-                state,
-                start,
-                end,
-                undefined,
-                MOCK_ID,
-            );
+            const result = raycastSingle(state, start, end, undefined, MOCK_ID);
             expect(result).toEqual(1);
         });
 
         it("Shouldn't return obstructions for start-adjacent objects", () => {
             const state: PlayerStorage = {
-                partialObstructions: featureCollection([
+                partialObstructions: [
                     // Square to the top right of the origin
                     lineString(
                         [
@@ -171,20 +236,20 @@ if (import.meta.vitest) {
                             permissiveness: 0.5,
                         },
                     ),
-                ]),
+                ],
             } as PlayerStorage;
 
             // Go from origin to the left
             const start = { x: 0, y: 0 };
             const end = { x: -10, y: 0 };
 
-            const result = partialObstructionPermissiveness(state, start, end);
+            const result = raycastSingle(state, start, end);
             expect(result).toEqual(1);
         });
 
         it("Shouldn't return obstructions for end-adjacent objects", () => {
             const state: PlayerStorage = {
-                partialObstructions: featureCollection([
+                partialObstructions: [
                     // Square to the top right of the origin
                     lineString(
                         [
@@ -199,20 +264,20 @@ if (import.meta.vitest) {
                             permissiveness: 0.5,
                         },
                     ),
-                ]),
+                ],
             } as PlayerStorage;
 
             // Come in from the top left of the origin - shouldn't hit anything
             const start = { x: -75, y: -75 };
             const end = { x: 0, y: 0 };
 
-            const result = partialObstructionPermissiveness(state, start, end);
+            const result = raycastSingle(state, start, end);
             expect(result).toEqual(1);
         });
 
         it("Shouldn't return obstructions for both start and end-adjacent objects", () => {
             const state: PlayerStorage = {
-                partialObstructions: featureCollection([
+                partialObstructions: [
                     // Square to the top right of the origin
                     lineString(
                         [
@@ -227,19 +292,17 @@ if (import.meta.vitest) {
                             permissiveness: 0.5,
                         },
                     ),
-                ]),
+                ],
             } as PlayerStorage;
 
             // Cross the square
             const start = { x: 0, y: 0 };
             const end = { x: 150, y: -150 };
 
-            const result = partialObstructionPermissiveness(state, start, end);
+            const result = raycastSingle(state, start, end);
             expect(result).toEqual(1);
         });
-    });
 
-    describe("findBlockingPoint", () => {
         it("Should return intersections", () => {
             const state: PlayerStorage = {
                 walls: {
@@ -265,9 +328,7 @@ if (import.meta.vitest) {
                 { x: 150, y: -150 },
             ];
 
-            const results = ends.map((end) =>
-                findBlockingPoint(state, start, end),
-            );
+            const results = ends.map((end) => raycastSingle(state, start, end));
 
             results.forEach((result, i) => {
                 expect(result).not.toEqual(ends[i]);

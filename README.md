@@ -49,7 +49,8 @@ To make a production build run:
 -   Turf separate imports? https://turfjs.org/docs/api/featureCollection, https://turfjs.org/docs/api/lineIntersect
 -   Combine walls? https://turfjs.org/docs/api/combine
 -   Figure out how to set different types of partial cover (3/4, etc)
--   lines, squares, hexagons, triangles, circles as obstructions
+-   squares, hexagons, triangles, circles as obstructions
+-   Paths as obstructions - context menu turns them into line strings
 
 ## License
 
