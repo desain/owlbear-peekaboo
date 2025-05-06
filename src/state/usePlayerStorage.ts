@@ -19,6 +19,7 @@ import {
 import type { ObstructionPolygonCandidate } from "../SharpObstructionPolygon";
 import { isSharpObstructionPolygon } from "../SharpObstructionPolygon";
 import { isToken } from "../Token";
+import { getCurveWorldPoints } from "../utils";
 
 enableMapSet();
 
@@ -62,10 +63,7 @@ function polygonToLineString(
     polygon: ObstructionPolygonCandidate,
     properties: PartialObstructionProperties,
 ): ObstructionFeature {
-    const points = polygon.points.map((point) => {
-        const { x, y } = Math2.add(polygon.position, point);
-        return [x, y];
-    });
+    const points = getCurveWorldPoints(polygon).map(({ x, y }) => [x, y]);
     // OBR polygons auto-close, so add a final line back
     // to the starting point.
     points.push(points[0]);
