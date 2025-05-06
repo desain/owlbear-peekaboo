@@ -1,5 +1,6 @@
-import type { BoundingBox, Vector2 } from "@owlbear-rodeo/sdk";
-import OBR from "@owlbear-rodeo/sdk";
+import type { BoundingBox, Curve, Vector2 } from "@owlbear-rodeo/sdk";
+import OBR, { MathM } from "@owlbear-rodeo/sdk";
+import { matrixMultiply } from "owlbear-utils";
 
 export function boundingBoxContains(
     point: Vector2,
@@ -19,6 +20,11 @@ export function vector2Equals(a: Vector2, b: Vector2) {
 
 export async function snapToCenter(pos: Vector2): Promise<Vector2> {
     return OBR.scene.grid.snapPosition(pos, 1.0, false, true);
+}
+
+export function getCurveWorldPoints(curve: Curve): Vector2[] {
+    const transform = MathM.fromItem(curve);
+    return curve.points.map((point) => matrixMultiply(transform, point));
 }
 
 export const CANCEL_SYMBOL = Symbol("cancel");

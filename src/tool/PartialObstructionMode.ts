@@ -27,10 +27,19 @@ import {
 import { usePlayerStorage } from "../state/usePlayerStorage";
 import type { Token } from "../Token";
 import { isToken } from "../Token";
+import { getCurveWorldPoints } from "../utils";
 
 const ROLES: Role[] = ["GM"];
 
 type HoverState = "add" | "remove";
+
+function getPolygonHoverState(
+    polygon: ObstructionPolygonCandidate,
+): HoverState {
+    return polygon.metadata[METADATA_KEY_CURVE_PERMISSIVENESS] !== undefined
+        ? "remove"
+        : "add";
+}
 
 function getPolygonIconSource(
     polygon: ObstructionPolygonCandidate,
@@ -49,9 +58,7 @@ function getPolygonIconSource(
 
 function createIconForPolygon(polygon: ObstructionPolygonCandidate): Image {
     const size = 150;
-    const centroid = Math2.centroid(
-        polygon.points.map((point) => Math2.add(point, polygon.position)),
-    );
+
     const imageContent: ImageContent = {
         height: size,
         width: size,
@@ -64,7 +71,7 @@ function createIconForPolygon(polygon: ObstructionPolygonCandidate): Image {
     };
     return buildImage(imageContent, imageGrid)
         .name("Peekaboo Partial Cover Icon")
-        .position(centroid)
+        .position(Math2.centroid(getCurveWorldPoints(polygon)))
         .scale({ x: 0.6, y: 0.6 })
         .disableHit(true)
         .locked(true)
@@ -228,14 +235,12 @@ export class PartialObstructionMode implements ToolMode {
         // if we're moving on to a next target, update its icon
 
         if (target && isObstructionPolygonCandidate(target)) {
-            const hoverState = target.metadata[
-                METADATA_KEY_CURVE_PERMISSIVENESS
-            ]
-                ? "remove"
-                : "add";
             const [iconId] = this.#iconMap.get(target.id) ?? [];
             if (iconId) {
-                const newUrl = getPolygonIconSource(target, hoverState);
+                const newUrl = getPolygonIconSource(
+                    target,
+                    getPolygonHoverState(target),
+                );
                 void OBR.scene.local.updateItems<Image>([iconId], ([icon]) => {
                     if (icon) {
                         icon.image.url = newUrl;
@@ -300,7 +305,14 @@ export class PartialObstructionMode implements ToolMode {
         for (const polygon of polygons) {
             const [iconId] = this.#iconMap.get(polygon.id) ?? [];
             if (iconId) {
-                toUpdate.push([iconId, getPolygonIconSource(polygon)]);
+                const hoverState =
+                    this.#hoveredPolygonId === polygon.id
+                        ? getPolygonHoverState(polygon)
+                        : undefined;
+                toUpdate.push([
+                    iconId,
+                    getPolygonIconSource(polygon, hoverState),
+                ]);
             } else {
                 const icon = createIconForPolygon(polygon);
                 this.#iconMap.set(polygon.id, [icon.id, false]);
