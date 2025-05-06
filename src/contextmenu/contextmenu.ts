@@ -4,11 +4,15 @@ import {
     ID_CONTEXT_MENU_CONVERT,
     ID_CONTEXT_MENU_REMOVE,
     METADATA_KEY_CURVE_PERMISSIVENESS,
+    STYLE_OBSTRUCTION,
 } from "../constants";
 import {
+    isObstructionCandidate,
+    KEY_FILTER_NON_OBSTRUCTION_LINE,
     KEY_FILTER_NON_OBSTRUCTION_POLYGON,
+    KEY_FILTER_OBSTRUCTION_LINE,
     KEY_FILTER_OBSTRUCTION_POLYGON,
-} from "../SharpObstructionPolygon";
+} from "../obstructions";
 import { usePlayerStorage } from "../state/usePlayerStorage";
 
 export async function startWatchingContextMenuEnabled(): Promise<VoidFunction> {
@@ -32,35 +36,38 @@ function installContextMenu() {
         OBR.contextMenu.create({
             id: ID_CONTEXT_MENU_CONVERT,
             icons: [
-                {
-                    icon: woodenFence,
-                    label: "Make Partial Obstruction",
-                    filter: {
-                        every: KEY_FILTER_NON_OBSTRUCTION_POLYGON,
-                    },
+                KEY_FILTER_NON_OBSTRUCTION_LINE,
+                KEY_FILTER_NON_OBSTRUCTION_POLYGON,
+            ].map((filter) => ({
+                icon: woodenFence,
+                label: "Make Partial Obstruction",
+                filter: {
+                    some: filter,
                 },
-            ],
+            })),
             onClick: (context) =>
                 OBR.scene.items.updateItems(context.items, (items) =>
-                    items.forEach((item) => {
+                    items.filter(isObstructionCandidate).forEach((item) => {
                         item.metadata[METADATA_KEY_CURVE_PERMISSIVENESS] = 0.5;
+                        item.style = { ...item.style, ...STYLE_OBSTRUCTION };
                     }),
                 ),
         }),
         OBR.contextMenu.create({
             id: ID_CONTEXT_MENU_REMOVE,
             icons: [
-                {
-                    icon: woodenFence,
-                    label: "Remove Partial Obstruction",
-                    filter: {
-                        every: KEY_FILTER_OBSTRUCTION_POLYGON,
-                    },
+                KEY_FILTER_OBSTRUCTION_LINE,
+                KEY_FILTER_OBSTRUCTION_POLYGON,
+            ].map((filter) => ({
+                icon: woodenFence,
+                label: "Remove Partial Obstruction",
+                filter: {
+                    some: filter,
                 },
-            ],
+            })),
             onClick: (context) =>
                 OBR.scene.items.updateItems(context.items, (items) =>
-                    items.forEach((item) => {
+                    items.filter(isObstructionCandidate).forEach((item) => {
                         delete item.metadata[METADATA_KEY_CURVE_PERMISSIVENESS];
                     }),
                 ),

@@ -1,5 +1,11 @@
 import type { Vector2 } from "@owlbear-rodeo/sdk";
 import { Math2 } from "@owlbear-rodeo/sdk";
+import {
+    COLOR_BACKUP,
+    COLOR_NO_OBSTRUCTION,
+    COLOR_OBSTRUCTED,
+    COLOR_PARTIAL_OBSTRUCTION,
+} from "../constants";
 import { usePlayerStorage } from "../state/usePlayerStorage";
 import { getGridCorners } from "./gridUtils";
 import type { Pin } from "./Pin";
@@ -45,14 +51,18 @@ export function raycast(
                 destinationId,
             );
             numCastsSucceeded += permissiveness;
-            lineColors.push(permissiveness === 1 ? "#ffffff" : "#ffff00");
+            lineColors.push(
+                permissiveness === 1
+                    ? COLOR_NO_OBSTRUCTION
+                    : COLOR_PARTIAL_OBSTRUCTION,
+            );
         } else {
-            lineColors.push("#ff0000");
+            lineColors.push(COLOR_OBSTRUCTED);
         }
     });
 
     const highlightColor =
-        state.cornerColors[Math.floor(numCastsSucceeded)] ?? "#cccccc";
+        state.cornerColors[Math.floor(numCastsSucceeded)] ?? COLOR_BACKUP;
     const labelText = state.cornerLabels[Math.floor(numCastsSucceeded)] ?? "";
 
     return {

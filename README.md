@@ -7,6 +7,7 @@ Owlbear Rodeo extension for checking token visibility.
 -   Adds a new tool to check the visiblity of tokens and grid squares
 -   Customize the display names and colors for different levels of visibility
 -   When switching back to the tool, if the previous visibility check started or ended on a token that's still present, it will update to the token's new position
+-   Create partial obstructions (including characters) that reduce but don't block visibility
 
 ## How to use
 
@@ -48,7 +49,7 @@ To make a production build run:
 -   Turf separate imports? https://turfjs.org/docs/api/featureCollection, https://turfjs.org/docs/api/lineIntersect
 -   Combine walls? https://turfjs.org/docs/api/combine
 -   Figure out how to set different types of partial cover (3/4, etc)
--   clicking on the map in partial mode starts a new polygon? Label above start point saying "Finish" which closes it. Esc = cancel, enter = finish
+-   lines, squares, hexagons, triangles, circles as obstructions
 
 ## License
 

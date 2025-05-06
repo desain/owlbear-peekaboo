@@ -16,10 +16,13 @@ import {
     LOCAL_STORAGE_STORE_NAME,
     METADATA_KEY_CURVE_PERMISSIVENESS,
 } from "../constants";
-import type { ObstructionPolygonCandidate } from "../SharpObstructionPolygon";
-import { isSharpObstructionPolygon } from "../SharpObstructionPolygon";
+import type {
+    ObstructionLineCandidate,
+    ObstructionPolygonCandidate,
+} from "../obstructions";
+import { isObstructionLine, isObstructionPolygon } from "../obstructions";
 import { isToken } from "../Token";
-import { getCurveWorldPoints } from "../utils";
+import { getCurveWorldPoints, getLineWorldPoints } from "../utils";
 
 enableMapSet();
 
@@ -36,8 +39,12 @@ export interface PartialObstructionProperties {
 }
 type ObstructionFeature = Feature<LineString, PartialObstructionProperties>;
 
+function vector2ToPosition(vector: { x: number; y: number }): Position {
+    return [vector.x, vector.y];
+}
+
 function wallToLineString(wall: Readonly<Wall>): Feature<LineString> {
-    const coords: Position[] = wall.points.map((pt) => [pt.x, pt.y]);
+    const coords: Position[] = wall.points.map(vector2ToPosition);
     if (coords.length < 2) {
         throw new Error("Invalid wall: " + JSON.stringify(coords));
     }
@@ -63,10 +70,18 @@ function polygonToLineString(
     polygon: ObstructionPolygonCandidate,
     properties: PartialObstructionProperties,
 ): ObstructionFeature {
-    const points = getCurveWorldPoints(polygon).map(({ x, y }) => [x, y]);
+    const points = getCurveWorldPoints(polygon).map(vector2ToPosition);
     // OBR polygons auto-close, so add a final line back
     // to the starting point.
     points.push(points[0]);
+    return lineString(points, properties);
+}
+
+function lineToLineString(
+    line: ObstructionLineCandidate,
+    properties: PartialObstructionProperties,
+): ObstructionFeature {
+    const points = getLineWorldPoints(line).map(vector2ToPosition);
     return lineString(points, properties);
 }
 
@@ -267,11 +282,21 @@ export const usePlayerStorage = create<PlayerStorage>()(
                                 }),
                             );
                         const polygonObstructionFeatures = items
-                            .filter(isSharpObstructionPolygon)
+                            .filter(isObstructionPolygon)
                             .map((polygon) =>
                                 polygonToLineString(polygon, {
                                     permissiveness:
                                         polygon.metadata[
+                                            METADATA_KEY_CURVE_PERMISSIVENESS
+                                        ],
+                                }),
+                            );
+                        const lineObstructionFeatures = items
+                            .filter(isObstructionLine)
+                            .map((line) =>
+                                lineToLineString(line, {
+                                    permissiveness:
+                                        line.metadata[
                                             METADATA_KEY_CURVE_PERMISSIVENESS
                                         ],
                                 }),
@@ -281,6 +306,7 @@ export const usePlayerStorage = create<PlayerStorage>()(
                             partialObstructions: featureCollection([
                                 ...tokenObstructionFeatures,
                                 ...polygonObstructionFeatures,
+                                ...lineObstructionFeatures,
                             ]),
                         };
                     }),
