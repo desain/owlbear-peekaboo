@@ -120,8 +120,7 @@ export function fixControlItems(
         endPosition,
         labelText,
         highlightColor,
-        collidedPositions,
-        lineColors,
+        lineResults,
     }: RaycastResult,
 ) {
     const state = usePlayerStorage.getState();
@@ -145,7 +144,7 @@ export function fixControlItems(
     // Fix lines
     lines.forEach((line, i) => {
         line.startPosition = startPosition;
-        line.endPosition = collidedPositions[i];
-        line.style.strokeColor = lineColors[i];
+        line.endPosition = lineResults[i].endPosition;
+        line.style.strokeColor = lineResults[i].color;
     });
 }

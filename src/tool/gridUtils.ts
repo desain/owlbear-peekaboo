@@ -1,6 +1,7 @@
-import type { Vector2 } from "@owlbear-rodeo/sdk";
+import { Math2, type Vector2 } from "@owlbear-rodeo/sdk";
 import type { GridParsed } from "owlbear-utils";
-import { ANGLE_DIMETRIC_RADIANS, isHexGrid, SQRT_3 } from "owlbear-utils";
+import { ANGLE_DIMETRIC_RADIANS, isHexGrid, PI_6, SQRT_3 } from "owlbear-utils";
+import { getHexagonPoints } from "../utils";
 
 const X_SCALE_DIMETRIC = 1 / Math.tan(ANGLE_DIMETRIC_RADIANS);
 
@@ -13,15 +14,11 @@ export function getGridCorners(
 ): Vector2[] {
     if (isHexGrid(type)) {
         // 6 corners for hex, dpi is flat-to-flat distance
-        const angleOffset = type === "HEX_HORIZONTAL" ? 0 : Math.PI / 6;
+        const angleOffset = type === "HEX_HORIZONTAL" ? 0 : PI_6;
         const radius = dpi / Math.sqrt(3); // center to corner
-        return Array.from({ length: 6 }, (_, i) => {
-            const angle = angleOffset + (Math.PI / 3) * i;
-            return {
-                x: center.x + radius * Math.cos(angle),
-                y: center.y + radius * Math.sin(angle),
-            };
-        });
+        return getHexagonPoints(radius, angleOffset).map((point) =>
+            Math2.add(point, center),
+        );
     } else if (type === "ISOMETRIC") {
         const halfDpi = dpi / 2;
         const xOffset = halfDpi * SQRT_3;

@@ -33,12 +33,17 @@ import type { ObstructionCandidate } from "../obstructions";
 import {
     isObstruction,
     isObstructionCandidate,
-    KEY_FILTER_OBSTRUCTION_POLYGON_CANDIDATE,
+    KEY_FILTERS_OBSTRUCTION_CANDIDATES,
 } from "../obstructions";
 import { usePlayerStorage } from "../state/usePlayerStorage";
 import type { Token } from "../Token";
 import { isToken } from "../Token";
-import { getCurveWorldPoints, getLineWorldPoints } from "../utils";
+import {
+    getCurveWorldPoints,
+    getLineWorldPoints,
+    getShapeWorldPoints,
+    isNonCircleShape,
+} from "../utils";
 
 const ROLES: Role[] = ["GM"];
 
@@ -74,9 +79,16 @@ function getIconPosition(item: ObstructionCandidate): Vector2 {
     } else if (isLine(item)) {
         return Math2.centroid(getLineWorldPoints(item));
     } else if (isShape(item)) {
-        throw new Error("unimplemented");
+        if (isNonCircleShape(item) && item.shapeType !== "HEXAGON") {
+            return Math2.centroid(getShapeWorldPoints(item));
+        } else {
+            return item.position;
+        }
     } else {
-        throw new Error("Unknown obstruction type");
+        console.error(
+            "Unknown obstruction type, defaulting to icon at item position",
+        );
+        return (item as Item).position;
     }
 }
 
@@ -161,12 +173,12 @@ export class PartialObstructionMode implements ToolMode {
     ];
 
     readonly cursors = [
-        {
+        ...KEY_FILTERS_OBSTRUCTION_CANDIDATES.map((targetFilter) => ({
             cursor: "pointer",
             filter: {
-                target: KEY_FILTER_OBSTRUCTION_POLYGON_CANDIDATE,
+                target: targetFilter,
             },
-        },
+        })),
         {
             cursor: "crosshair",
         },
@@ -218,7 +230,6 @@ export class PartialObstructionMode implements ToolMode {
 
     /**
      * Update all icons.
-     *         // TODO fix icon if we're hovering over what we just clicked
      * @param items All items in the scene.
      */
     readonly #updateIcons = async (
