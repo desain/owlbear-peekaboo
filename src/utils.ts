@@ -1,4 +1,4 @@
-import type { BoundingBox, Curve, Vector2 } from "@owlbear-rodeo/sdk";
+import type { BoundingBox, Curve, Line, Vector2 } from "@owlbear-rodeo/sdk";
 import OBR, { MathM } from "@owlbear-rodeo/sdk";
 import { matrixMultiply } from "owlbear-utils";
 
@@ -25,6 +25,14 @@ export async function snapToCenter(pos: Vector2): Promise<Vector2> {
 export function getCurveWorldPoints(curve: Curve): Vector2[] {
     const transform = MathM.fromItem(curve);
     return curve.points.map((point) => matrixMultiply(transform, point));
+}
+
+export function getLineWorldPoints(line: Line): Vector2[] {
+    const transform = MathM.fromItem(line);
+    return [
+        matrixMultiply(transform, line.startPosition),
+        matrixMultiply(transform, line.endPosition),
+    ];
 }
 
 export const CANCEL_SYMBOL = Symbol("cancel");

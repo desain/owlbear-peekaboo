@@ -1,9 +1,17 @@
-import type { Curve, Image, ImageContent, ImageGrid } from "@owlbear-rodeo/sdk";
+import type {
+    Curve,
+    Image,
+    ImageContent,
+    ImageGrid,
+    Vector2,
+} from "@owlbear-rodeo/sdk";
 import OBR, {
     buildImage,
+    isCurve,
+    isLine,
+    isShape,
     Math2,
     type Item,
-    type KeyEvent,
     type ToolContext,
     type ToolEvent,
     type ToolMode,
@@ -17,33 +25,36 @@ import {
     CONTROL_METADATA,
     ID_TOOL,
     ID_TOOL_MODE_PARTIAL_OBSTRUCTIONS,
+    ID_TOOL_MODE_PEN,
     METADATA_KEY_CURVE_PERMISSIVENESS,
+    METADATA_KEY_TOOL_PEN_ENABLED,
 } from "../constants";
+import type { ObstructionCandidate } from "../obstructions";
 import {
-    isObstructionPolygonCandidate,
-    isSharpObstructionPolygon,
+    isObstruction,
+    isObstructionCandidate,
     KEY_FILTER_OBSTRUCTION_POLYGON_CANDIDATE,
-    type ObstructionPolygonCandidate,
-} from "../SharpObstructionPolygon";
+} from "../obstructions";
 import { usePlayerStorage } from "../state/usePlayerStorage";
 import type { Token } from "../Token";
 import { isToken } from "../Token";
-import { getCurveWorldPoints } from "../utils";
+import { getCurveWorldPoints, getLineWorldPoints } from "../utils";
 
 const ROLES: Role[] = ["GM"];
 
 type HoverState = "add" | "remove";
 
-function getPolygonHoverState(
-    polygon: ObstructionPolygonCandidate,
-): HoverState {
-    return polygon.metadata[METADATA_KEY_CURVE_PERMISSIVENESS] !== undefined
+/**
+ * @returns Hover state of the given obstruction when hovered over.
+ */
+function getHoverState(item: ObstructionCandidate): HoverState {
+    return item.metadata[METADATA_KEY_CURVE_PERMISSIVENESS] !== undefined
         ? "remove"
         : "add";
 }
 
-function getPolygonIconSource(
-    polygon: ObstructionPolygonCandidate,
+function getIconSource(
+    item: ObstructionCandidate,
     hoverState?: HoverState,
 ): string {
     if (hoverState === "add") {
@@ -53,18 +64,30 @@ function getPolygonIconSource(
     }
     return (
         window.location.origin +
-        (isSharpObstructionPolygon(polygon) ? woodenFence : woodenFenceQuestion)
+        (isObstruction(item) ? woodenFence : woodenFenceQuestion)
     );
 }
 
-function createIconForPolygon(polygon: ObstructionPolygonCandidate): Image {
+function getIconPosition(item: ObstructionCandidate): Vector2 {
+    if (isCurve(item)) {
+        return Math2.centroid(getCurveWorldPoints(item));
+    } else if (isLine(item)) {
+        return Math2.centroid(getLineWorldPoints(item));
+    } else if (isShape(item)) {
+        throw new Error("unimplemented");
+    } else {
+        throw new Error("Unknown obstruction type");
+    }
+}
+
+function createIcon(item: ObstructionCandidate): Image {
     const size = 150;
 
     const imageContent: ImageContent = {
         height: size,
         width: size,
         mime: "image/svg+xml",
-        url: getPolygonIconSource(polygon),
+        url: getIconSource(item),
     };
     const imageGrid: ImageGrid = {
         dpi: size,
@@ -72,13 +95,13 @@ function createIconForPolygon(polygon: ObstructionPolygonCandidate): Image {
     };
     return buildImage(imageContent, imageGrid)
         .name("Peekaboo Partial Cover Icon")
-        .position(Math2.centroid(getCurveWorldPoints(polygon)))
+        .position(getIconPosition(item))
         .scale({ x: 0.6, y: 0.6 })
         .disableHit(true)
         .locked(true)
         .layer("CONTROL")
         .metadata(CONTROL_METADATA)
-        .attachedTo(polygon.id)
+        .attachedTo(item.id)
         .disableAttachmentBehavior([
             "COPY",
             "LOCKED",
@@ -121,7 +144,7 @@ function createIconForToken(token: Token): Image {
 }
 
 /**
- * Mode which allows the user to designate some polygons as partial obstructions.
+ * Mode which allows the user to designate some lines/shapes/polygons as partial obstructions.
  */
 export class PartialObstructionMode implements ToolMode {
     readonly id = ID_TOOL_MODE_PARTIAL_OBSTRUCTIONS;
@@ -149,10 +172,9 @@ export class PartialObstructionMode implements ToolMode {
         },
     ];
 
-    // preventDrag?: ToolModeFilter | undefined;
-
+    readonly #handleMapClick: (position: Vector2) => void;
     /**
-     * Polygon/Token ID -> Icon ID
+     * Line/Polygon/Shape/Token ID -> Icon
      */
     readonly #iconMap = new Map<string, [iconId: string, isToken: boolean]>();
     /**
@@ -160,109 +182,39 @@ export class PartialObstructionMode implements ToolMode {
      */
     #unsubscribe?: VoidFunction;
     /**
-     * Info about the polygon we're hovering over, or undefined if we're not hovering.
+     * Info about the obstruction we're hovering over, or undefined if we're not hovering.
      */
-    #hoveredPolygonId?: string;
+    #hoveredObstructionId?: string;
 
-    readonly onToolClick = (_context: ToolContext, event: ToolEvent) => {
-        void this; // stop complaint about class method without 'this'.
-        const target = event.target;
-        if (!target) {
-            return;
-        }
+    constructor(handleMapClick: (position: Vector2) => void) {
+        this.#handleMapClick = handleMapClick;
+    }
 
-        if (isObstructionPolygonCandidate(target)) {
-            if (target.metadata[METADATA_KEY_CURVE_PERMISSIVENESS]) {
-                void OBR.scene.items.updateItems([target], ([target]) => {
-                    delete target.metadata[METADATA_KEY_CURVE_PERMISSIVENESS];
-                });
-            } else {
-                void OBR.scene.items.updateItems([target], ([target]) => {
-                    target.metadata[METADATA_KEY_CURVE_PERMISSIVENESS] = 0.5;
-                });
-            }
-        }
+    readonly onActivate = () => {
+        const handleNewItems = (items: Item[]) =>
+            this.#updateIcons(
+                items,
+                usePlayerStorage.getState().characterPermissiveness,
+            );
+        // Subscribe to item and config updates
+        const unsubscribeItems = OBR.scene.items.onChange(handleNewItems);
+        const unsubscribePermissiveness = usePlayerStorage.subscribe(
+            (state) => state.characterPermissiveness,
+            (characterPermissiveness) =>
+                OBR.scene.items
+                    .getItems()
+                    .then((items) =>
+                        this.#updateIcons(items, characterPermissiveness),
+                    ),
+        );
+        this.#unsubscribe = deferCallAll(
+            unsubscribeItems,
+            unsubscribePermissiveness,
+        );
+
+        // Initial population
+        void OBR.scene.items.getItems().then(handleNewItems);
     };
-    readonly onToolDoubleClick =
-        (/*_context: ToolContext, event: ToolEvent*/) => {
-            void this;
-            // this.onToolClick(_context, event);
-        };
-
-    readonly onToolMove = (_context: ToolContext, event: ToolEvent) => {
-        const target = event.target;
-
-        // early exit if we're moving over the same polygon, or over no polygon
-        if (target?.id === this.#hoveredPolygonId) {
-            return;
-        }
-
-        // by here we know that we're changing state, so cleanup prev
-
-        if (this.#hoveredPolygonId) {
-            const oldHoveredId = this.#hoveredPolygonId;
-            this.#hoveredPolygonId = undefined;
-            const [iconId] = this.#iconMap.get(oldHoveredId) ?? [];
-            if (iconId) {
-                void (async () => {
-                    const [polygon] = await OBR.scene.items.getItems<Curve>([
-                        oldHoveredId,
-                    ]);
-                    if (!isObstructionPolygonCandidate(polygon)) {
-                        return;
-                    }
-                    const newUrl = getPolygonIconSource(polygon);
-                    await OBR.scene.local.updateItems<Image>(
-                        [iconId],
-                        ([icon]) => {
-                            if (icon) {
-                                icon.image.url = newUrl;
-                            }
-                        },
-                    );
-                })();
-            } else {
-                console.warn("Moving away from non-tracked item", oldHoveredId);
-            }
-        }
-
-        // if we're moving on to a next target, update its icon
-
-        if (target && isObstructionPolygonCandidate(target)) {
-            const [iconId] = this.#iconMap.get(target.id) ?? [];
-            if (iconId) {
-                const newUrl = getPolygonIconSource(
-                    target,
-                    getPolygonHoverState(target),
-                );
-                void OBR.scene.local.updateItems<Image>([iconId], ([icon]) => {
-                    if (icon) {
-                        icon.image.url = newUrl;
-                    }
-                });
-                this.#hoveredPolygonId = target.id;
-            } else {
-                console.warn("Moving to non-tracked item", target.id);
-            }
-        }
-    };
-
-    onToolDown?: ((context: ToolContext, event: ToolEvent) => void) | undefined;
-    onToolUp?: ((context: ToolContext, event: ToolEvent) => void) | undefined;
-    onToolDragStart?:
-        | ((context: ToolContext, event: ToolEvent) => void)
-        | undefined;
-    onToolDragMove?:
-        | ((context: ToolContext, event: ToolEvent) => void)
-        | undefined;
-    onToolDragEnd?:
-        | ((context: ToolContext, event: ToolEvent) => void)
-        | undefined;
-    onToolDragCancel?:
-        | ((context: ToolContext, event: ToolEvent) => void)
-        | undefined;
-    onKeyDown?: ((context: ToolContext, event: KeyEvent) => void) | undefined;
-    onKeyUp?: ((context: ToolContext, event: KeyEvent) => void) | undefined;
 
     /**
      * Update all icons.
@@ -280,12 +232,12 @@ export class PartialObstructionMode implements ToolMode {
         const toDelete: string[] = [];
         const toUpdate: [iconId: string, imageSource: string][] = [];
 
-        const polygons = items.filter(isObstructionPolygonCandidate);
+        const candidates = items.filter(isObstructionCandidate);
         const tokens = items.filter(isToken);
 
-        // Remove icons for polygons/tokens that should longer exist
+        // Remove icons for obstructions/tokens that should longer exist
         const currentIds = new Set([
-            ...polygons.map(getId),
+            ...candidates.map(getId),
             ...tokens.map(getId),
         ]);
         for (const [id, [iconId, isToken]] of this.#iconMap.entries()) {
@@ -295,21 +247,18 @@ export class PartialObstructionMode implements ToolMode {
             }
         }
 
-        // Add icons for new polygons
-        for (const polygon of polygons) {
-            const [iconId] = this.#iconMap.get(polygon.id) ?? [];
+        // Add icons for new obstruction candidates
+        for (const candidate of candidates) {
+            const [iconId] = this.#iconMap.get(candidate.id) ?? [];
             if (iconId) {
                 const hoverState =
-                    this.#hoveredPolygonId === polygon.id
-                        ? getPolygonHoverState(polygon)
+                    this.#hoveredObstructionId === candidate.id
+                        ? getHoverState(candidate)
                         : undefined;
-                toUpdate.push([
-                    iconId,
-                    getPolygonIconSource(polygon, hoverState),
-                ]);
+                toUpdate.push([iconId, getIconSource(candidate, hoverState)]);
             } else {
-                const icon = createIconForPolygon(polygon);
-                this.#iconMap.set(polygon.id, [icon.id, false]);
+                const icon = createIcon(candidate);
+                this.#iconMap.set(candidate.id, [icon.id, false]);
                 toAdd.push(icon);
             }
         }
@@ -340,30 +289,89 @@ export class PartialObstructionMode implements ToolMode {
         ]);
     };
 
-    readonly onActivate = () => {
-        const handleNewItems = (items: Item[]) =>
-            this.#updateIcons(
-                items,
-                usePlayerStorage.getState().characterPermissiveness,
-            );
-        // Subscribe to item and config updates
-        const unsubscribeItems = OBR.scene.items.onChange(handleNewItems);
-        const unsubscribePermissiveness = usePlayerStorage.subscribe(
-            (state) => state.characterPermissiveness,
-            (characterPermissiveness) =>
-                OBR.scene.items
-                    .getItems()
-                    .then((items) =>
-                        this.#updateIcons(items, characterPermissiveness),
-                    ),
-        );
-        this.#unsubscribe = deferCallAll(
-            unsubscribeItems,
-            unsubscribePermissiveness,
-        );
+    readonly onToolMove = (_context: ToolContext, event: ToolEvent) => {
+        const target = event.target;
 
-        // Initial population
-        void OBR.scene.items.getItems().then(handleNewItems);
+        // early exit if we're moving over the same obstruction, or over no obstruction
+        if (target?.id === this.#hoveredObstructionId) {
+            return;
+        }
+
+        // by here we know that we're changing state, so cleanup prev
+
+        if (this.#hoveredObstructionId) {
+            const oldHoveredId = this.#hoveredObstructionId;
+            this.#hoveredObstructionId = undefined;
+            const [iconId] = this.#iconMap.get(oldHoveredId) ?? [];
+            if (iconId) {
+                void (async () => {
+                    const [obstruction] = await OBR.scene.items.getItems<Curve>(
+                        [oldHoveredId],
+                    );
+                    if (!isObstructionCandidate(obstruction)) {
+                        return;
+                    }
+                    const newUrl = getIconSource(obstruction);
+                    await OBR.scene.local.updateItems<Image>(
+                        [iconId],
+                        ([icon]) => {
+                            if (icon) {
+                                icon.image.url = newUrl;
+                            }
+                        },
+                    );
+                })();
+            } else {
+                console.warn("Moving away from non-tracked item", oldHoveredId);
+            }
+        }
+
+        // if we're moving on to a next target, update its icon
+
+        if (target && isObstructionCandidate(target)) {
+            const [iconId] = this.#iconMap.get(target.id) ?? [];
+            if (iconId) {
+                const newUrl = getIconSource(target, getHoverState(target));
+                void OBR.scene.local.updateItems<Image>([iconId], ([icon]) => {
+                    if (icon) {
+                        icon.image.url = newUrl;
+                    }
+                });
+                this.#hoveredObstructionId = target.id;
+            } else {
+                console.warn("Moving to non-tracked item", target.id);
+            }
+        }
+    };
+
+    readonly onToolClick = (_context: ToolContext, event: ToolEvent) => {
+        void this; // stop complaint about class method without 'this'.
+        const target = event.target;
+
+        if (target && isObstructionCandidate(target)) {
+            if (target.metadata[METADATA_KEY_CURVE_PERMISSIVENESS]) {
+                void OBR.scene.items.updateItems([target], ([target]) => {
+                    delete target.metadata[METADATA_KEY_CURVE_PERMISSIVENESS];
+                });
+            } else {
+                void OBR.scene.items.updateItems([target], ([target]) => {
+                    target.metadata[METADATA_KEY_CURVE_PERMISSIVENESS] = 0.5;
+                });
+            }
+        } else {
+            // start drawing obstruction
+            this.#handleMapClick(event.pointerPosition);
+            void OBR.tool
+                .setMetadata(ID_TOOL, { [METADATA_KEY_TOOL_PEN_ENABLED]: true })
+                .then(() => OBR.tool.activateMode(ID_TOOL, ID_TOOL_MODE_PEN));
+        }
+        return false;
+    };
+
+    // disable double click to select
+    readonly onToolDoubleClick = () => {
+        void this;
+        return false;
     };
 
     readonly onDeactivate = () => {
@@ -379,4 +387,22 @@ export class PartialObstructionMode implements ToolMode {
             this.#unsubscribe = undefined;
         }
     };
+
+    // preventDrag?: ToolModeFilter | undefined;
+    // onToolDown?: ((context: ToolContext, event: ToolEvent) => void) | undefined;
+    // onToolUp?: ((context: ToolContext, event: ToolEvent) => void) | undefined;
+    // onToolDragStart?:
+    //     | ((context: ToolContext, event: ToolEvent) => void)
+    //     | undefined;
+    // onToolDragMove?:
+    //     | ((context: ToolContext, event: ToolEvent) => void)
+    //     | undefined;
+    // onToolDragEnd?:
+    //     | ((context: ToolContext, event: ToolEvent) => void)
+    //     | undefined;
+    // onToolDragCancel?:
+    //     | ((context: ToolContext, event: ToolEvent) => void)
+    //     | undefined;
+    // onKeyDown?: ((context: ToolContext, event: KeyEvent) => void) | undefined;
+    // onKeyUp?: ((context: ToolContext, event: KeyEvent) => void) | undefined;
 }

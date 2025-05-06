@@ -10,6 +10,7 @@ import {
 import { useRehydrate } from "owlbear-utils";
 import { version } from "../../package.json";
 import { broadcastSetCharacterPermissiveness } from "../broadcast/broadcast";
+import { COLOR_BACKUP } from "../constants";
 import { usePlayerStorage } from "../state/usePlayerStorage";
 
 export function Settings() {
@@ -109,7 +110,7 @@ export function Settings() {
                         />
                         <input
                             type="color"
-                            value={cornerColors[n] ?? "#cccccc"}
+                            value={cornerColors[n] ?? COLOR_BACKUP}
                             onChange={(e) => setCornerColor(n, e.target.value)}
                             style={{
                                 width: 36,
