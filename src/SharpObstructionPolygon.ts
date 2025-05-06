@@ -1,4 +1,4 @@
-import type { Curve, Item } from "@owlbear-rodeo/sdk";
+import type { Curve, Item, KeyFilter } from "@owlbear-rodeo/sdk";
 import { isCurve } from "@owlbear-rodeo/sdk";
 import type { HasParameterizedMetadata } from "owlbear-utils";
 import { METADATA_KEY_CURVE_PERMISSIVENESS } from "./constants";
@@ -22,6 +22,24 @@ export function isObstructionPolygonCandidate(
                 "number")
     );
 }
+export const KEY_FILTER_OBSTRUCTION_POLYGON_CANDIDATE: KeyFilter[] = [
+    {
+        key: "type",
+        value: "CURVE",
+    },
+    {
+        key: ["style", "tension"],
+        value: 0,
+    },
+];
+
+export const KEY_FILTER_NON_OBSTRUCTION_POLYGON: KeyFilter[] = [
+    ...KEY_FILTER_OBSTRUCTION_POLYGON_CANDIDATE,
+    {
+        key: ["metadata", METADATA_KEY_CURVE_PERMISSIVENESS],
+        value: undefined,
+    },
+];
 
 export type SharpObstructionPolygon = ObstructionPolygonCandidate &
     HasParameterizedMetadata<typeof METADATA_KEY_CURVE_PERMISSIVENESS, number>;
@@ -35,3 +53,11 @@ export function isSharpObstructionPolygon(
         typeof curve.metadata[METADATA_KEY_CURVE_PERMISSIVENESS] === "number"
     );
 }
+export const KEY_FILTER_OBSTRUCTION_POLYGON: KeyFilter[] = [
+    ...KEY_FILTER_OBSTRUCTION_POLYGON_CANDIDATE,
+    {
+        key: ["metadata", METADATA_KEY_CURVE_PERMISSIVENESS],
+        operator: "!=",
+        value: undefined,
+    },
+];

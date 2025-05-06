@@ -45,20 +45,10 @@ To make a production build run:
 ## To do
 
 -   two sets of lines, white until the stop point, red after
--   Add some way to incorporate partial obstacles like tables, so that any visibility line that passes through them isn't counted as full visibility.
-    -   Use https://game-icons.net/1x1/lorc/wooden-fence.html
-    -   Block every other vision line?
-    -   Make vision lines that go through them count as half? 🌟
-    -   Make characters count as half cover
-        -   Configurable via setting
-    -   Tool mode (gm only) that lets you apply this metadata to polygons.
-        -   When active, show icon on centroid (Math2) of active polygons
-        -   When hover over a polygon, show icon (set or unset)
-        -   When click on polygon, set. When click again, unset
-        -   TODO: how to set different types of partial cover
-        -   TODO: clicking on the map starts a new polygon? Label above start point saying "Finish" which closes it. Esc = cancel, enter = finish.
 -   Turf separate imports? https://turfjs.org/docs/api/featureCollection, https://turfjs.org/docs/api/lineIntersect
 -   Combine walls? https://turfjs.org/docs/api/combine
+-   Figure out how to set different types of partial cover (3/4, etc)
+-   clicking on the map in partial mode starts a new polygon? Label above start point saying "Finish" which closes it. Esc = cancel, enter = finish
 
 ## License
 

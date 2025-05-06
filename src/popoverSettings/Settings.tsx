@@ -29,6 +29,13 @@ export function Settings() {
         (store) => store.characterPermissiveness,
     );
 
+    const contextMenuEnabled = usePlayerStorage(
+        (store) => store.contextMenuEnabled,
+    );
+    const setContextMenuEnabled = usePlayerStorage(
+        (store) => store.setContextMenuEnabled,
+    );
+
     return (
         <Box sx={{ p: 2, minWidth: 300 }}>
             <Typography variant="h6">Visibility Tool Settings</Typography>
@@ -63,6 +70,23 @@ export function Settings() {
                 <FormHelperText>
                     If enabled, characters will count as partial obstructions
                     for visibility.
+                </FormHelperText>
+            </FormGroup>
+            <FormGroup sx={{ mb: 2 }}>
+                <FormControlLabel
+                    control={
+                        <Switch
+                            checked={contextMenuEnabled}
+                            onChange={(e) =>
+                                setContextMenuEnabled(e.target.checked)
+                            }
+                        />
+                    }
+                    label="Enable context menu"
+                />
+                <FormHelperText>
+                    If enabled, right-clicking a polygon or line will show a
+                    menu to convert it into a partial obstruction.
                 </FormHelperText>
             </FormGroup>
             <FormGroup>

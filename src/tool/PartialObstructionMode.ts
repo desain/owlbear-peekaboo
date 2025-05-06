@@ -22,6 +22,7 @@ import {
 import {
     isObstructionPolygonCandidate,
     isSharpObstructionPolygon,
+    KEY_FILTER_OBSTRUCTION_POLYGON_CANDIDATE,
     type ObstructionPolygonCandidate,
 } from "../SharpObstructionPolygon";
 import { usePlayerStorage } from "../state/usePlayerStorage";
@@ -140,16 +141,7 @@ export class PartialObstructionMode implements ToolMode {
         {
             cursor: "pointer",
             filter: {
-                target: [
-                    {
-                        key: "type",
-                        value: "CURVE",
-                    },
-                    {
-                        key: ["style", "tension"],
-                        value: 0,
-                    },
-                ],
+                target: KEY_FILTER_OBSTRUCTION_POLYGON_CANDIDATE,
             },
         },
         {
@@ -191,9 +183,11 @@ export class PartialObstructionMode implements ToolMode {
             }
         }
     };
-    readonly onToolDoubleClick = (_context: ToolContext, event: ToolEvent) => {
-        this.onToolClick(_context, event);
-    };
+    readonly onToolDoubleClick =
+        (/*_context: ToolContext, event: ToolEvent*/) => {
+            void this;
+            // this.onToolClick(_context, event);
+        };
 
     readonly onToolMove = (_context: ToolContext, event: ToolEvent) => {
         const target = event.target;
