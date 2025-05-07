@@ -7,10 +7,14 @@ import {
     TextField,
     Typography,
 } from "@mui/material";
+import { produce } from "immer";
 import { useRehydrate } from "owlbear-utils";
 import { version } from "../../package.json";
-import { broadcastSetCharacterPermissiveness } from "../broadcast/broadcast";
 import { COLOR_BACKUP } from "../constants";
+import {
+    setCharacterPermissiveness,
+    setCornerCountConfigs,
+} from "../state/roomMetadata";
 import { usePlayerStorage } from "../state/usePlayerStorage";
 
 export function Settings() {
@@ -20,11 +24,7 @@ export function Settings() {
     const setSnapOrigin = usePlayerStorage((store) => store.setSnapOrigin);
     const numGridCorners = usePlayerStorage((store) => store.getGridCorners());
 
-    const cornerLabels = usePlayerStorage((store) => store.cornerLabels);
-    const setCornerLabel = usePlayerStorage((store) => store.setCornerLabel);
-
-    const cornerColors = usePlayerStorage((store) => store.cornerColors);
-    const setCornerColor = usePlayerStorage((store) => store.setCornerColor);
+    const cornerConfigs = usePlayerStorage((store) => store.cornerConfigs);
 
     const characterPermissiveness = usePlayerStorage(
         (store) => store.characterPermissiveness,
@@ -64,7 +64,7 @@ export function Settings() {
                                 <Switch
                                     checked={characterPermissiveness === 0.5}
                                     onChange={(e) =>
-                                        broadcastSetCharacterPermissiveness(
+                                        setCharacterPermissiveness(
                                             e.target.checked ? 0.5 : 1,
                                         )
                                     }
@@ -114,9 +114,17 @@ export function Settings() {
                                     label={`${n} visible corner${
                                         n !== 1 ? "s" : ""
                                     }`}
-                                    value={cornerLabels[n] ?? ""}
+                                    value={cornerConfigs[n].label ?? ""}
                                     onChange={(e) =>
-                                        setCornerLabel(n, e.target.value)
+                                        setCornerCountConfigs(
+                                            produce(
+                                                cornerConfigs,
+                                                (cornerConfigs) => {
+                                                    cornerConfigs[n].label =
+                                                        e.target.value;
+                                                },
+                                            ),
+                                        )
                                     }
                                     size="small"
                                     fullWidth
@@ -124,9 +132,19 @@ export function Settings() {
                                 />
                                 <input
                                     type="color"
-                                    value={cornerColors[n] ?? COLOR_BACKUP}
+                                    value={
+                                        cornerConfigs[n].color ?? COLOR_BACKUP
+                                    }
                                     onChange={(e) =>
-                                        setCornerColor(n, e.target.value)
+                                        setCornerCountConfigs(
+                                            produce(
+                                                cornerConfigs,
+                                                (cornerConfigs) => {
+                                                    cornerConfigs[n].color =
+                                                        e.target.value;
+                                                },
+                                            ),
+                                        )
                                     }
                                     style={{
                                         width: 36,

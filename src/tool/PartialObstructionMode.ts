@@ -26,7 +26,7 @@ import {
     ID_TOOL,
     ID_TOOL_MODE_PARTIAL_OBSTRUCTIONS,
     ID_TOOL_MODE_PEN,
-    METADATA_KEY_CURVE_PERMISSIVENESS,
+    METADATA_KEY_OBSTRUCTION_PERMISSIVENESS,
     METADATA_KEY_TOOL_PEN_ENABLED,
 } from "../constants";
 import type { ObstructionCandidate } from "../obstructions";
@@ -53,7 +53,7 @@ type HoverState = "add" | "remove";
  * @returns Hover state of the given obstruction when hovered over.
  */
 function getHoverState(item: ObstructionCandidate): HoverState {
-    return item.metadata[METADATA_KEY_CURVE_PERMISSIVENESS] !== undefined
+    return item.metadata[METADATA_KEY_OBSTRUCTION_PERMISSIVENESS] !== undefined
         ? "remove"
         : "add";
 }
@@ -360,13 +360,17 @@ export class PartialObstructionMode implements ToolMode {
         const target = event.target;
 
         if (target && isObstructionCandidate(target)) {
-            if (target.metadata[METADATA_KEY_CURVE_PERMISSIVENESS]) {
+            if (target.metadata[METADATA_KEY_OBSTRUCTION_PERMISSIVENESS]) {
                 void OBR.scene.items.updateItems([target], ([target]) => {
-                    delete target.metadata[METADATA_KEY_CURVE_PERMISSIVENESS];
+                    delete target.metadata[
+                        METADATA_KEY_OBSTRUCTION_PERMISSIVENESS
+                    ];
                 });
             } else {
                 void OBR.scene.items.updateItems([target], ([target]) => {
-                    target.metadata[METADATA_KEY_CURVE_PERMISSIVENESS] = 0.5;
+                    target.metadata[
+                        METADATA_KEY_OBSTRUCTION_PERMISSIVENESS
+                    ] = 0.5;
                 });
             }
         } else {

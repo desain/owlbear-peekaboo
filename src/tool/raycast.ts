@@ -63,15 +63,16 @@ export function raycast(
         }
     });
 
-    const highlightColor =
-        state.cornerColors[Math.floor(numCastsSucceeded)] ?? COLOR_BACKUP;
-    const labelText = state.cornerLabels[Math.floor(numCastsSucceeded)] ?? "";
+    const cornerConfig = state.cornerConfigs[Math.floor(numCastsSucceeded)] ?? {
+        label: "",
+        color: COLOR_BACKUP,
+    };
 
     return {
         startPosition,
         endPosition,
-        labelText,
-        highlightColor,
+        labelText: cornerConfig.label,
+        highlightColor: cornerConfig.color,
         lineResults,
     };
 }
