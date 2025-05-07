@@ -48,6 +48,16 @@ async function installTool() {
                 {
                     icon: eyeTarget,
                     label: "Check Visibility",
+                    filter: {
+                        permissions: [
+                            "POINTER_CREATE",
+                            "POINTER_UPDATE",
+                            "POINTER_DELETE",
+                            "RULER_CREATE",
+                            "RULER_UPDATE",
+                            "RULER_DELETE",
+                        ],
+                    },
                 },
             ],
             defaultMetadata: {},

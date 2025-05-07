@@ -191,6 +191,7 @@ export class DrawCoverMode implements ToolMode {
                 .visible(false)
                 .metadata(metadata)
                 .locked(true)
+                .layer("DRAWING")
                 .build();
         } else {
             result = buildCurve()
@@ -210,6 +211,7 @@ export class DrawCoverMode implements ToolMode {
                 .visible(false)
                 .metadata(metadata)
                 .locked(true)
+                .layer('DRAWING')
                 .build();
         }
 
