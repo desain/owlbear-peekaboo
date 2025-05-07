@@ -19,12 +19,17 @@ export default defineConfig({
                     __dirname,
                     "/src/background/background.html",
                 ),
-                popoverSettings: resolve(__dirname, "/src/popoverSettings/popoverSettings.html"),
+                popoverSettings: resolve(
+                    __dirname,
+                    "/src/popoverSettings/popoverSettings.html",
+                ),
             },
         },
     },
     test: {
-        includeSource: ["src/**/*.{js,ts}"],
+        // environment: "jsdom",
+        // globals: true,
+        // includeSource: ["src/**/*.{js,ts}"],
         setupFiles: ["./test/vitest.setup.ts"],
     },
     define: {

@@ -1,11 +1,11 @@
 {
   "name": "Peekaboo",
-  "description": "Adds a tool to check token cover and visibility.",
+  "description": "Check which tokens and squares are visible from others, using partial cover and walls from extensions like Dynamic Fog and Smoke and Spectre",
   "version": "0.4.0",
   "manifest_version": 1,
   "author": "desain",
   "icon": "/logo.svg",
-  "homepage_url": "https://github.com/desain/owlbear-template",
+  "homepage_url": "https://github.com/desain/owlbear-peekaboo",
   "background_url": "/src/background/background.html",
   "permissions": []
 }
