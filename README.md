@@ -81,13 +81,15 @@ To make a production build run:
 
 ## To do
 
--   two sets of lines, white until the stop point, red after
+-   two sets of lines, white until the stop point, red/yellow after
 -   Turf separate imports? https://turfjs.org/docs/api/featureCollection, https://turfjs.org/docs/api/lineIntersect
 -   Combine walls? https://turfjs.org/docs/api/combine
 -   Figure out how to set different types of partial cover (3/4, etc)
 -   Paths as cover - context menu turns them into line strings
 -   Cleanup shouldn't destroy active measurements. only destroys others public measurements if called by gm. resets tool start and end
 -   take color input from utils once utils has it
+-   Partial cover goes on map layer?
+-   setting for restore previous visibility check when switching to tool: never/always/only on tokens
 
 ## License
 
