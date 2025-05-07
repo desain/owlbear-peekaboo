@@ -36,7 +36,7 @@
     "@turf/turf": "^7.2.0",
     "globals": "^16.1.0",
     "immer": "^10.1.1",
-    "owlbear-utils": "file:../owlbear-utils",
+    "owlbear-utils": "github:desain/owlbear-utils",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "zustand": "^5.0.4"
