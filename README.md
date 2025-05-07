@@ -86,7 +86,6 @@ To make a production build run:
 -   Figure out how to set different types of partial cover (3/4, etc)
 -   Paths as obstructions - context menu turns them into line strings
 -   Cornercount names, colors, characters block is a room metadata setting only changable by GM
--   Context menu is only available to GM
 -   Put measurements on ruler layer, label on control layer. Tool only shows up if you have ruler create + update perms
 
 ## License
