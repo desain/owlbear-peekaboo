@@ -1,6 +1,6 @@
 ---
 title: Peekaboo
-description: Check which tokens and squares are visible from others, using partial cover and walls from extensions like Dynamic Fog and Smoke and Spectre.
+description: Check which tokens and squares are visible from others, using walls from extensions like Dynamic Fog / Smoke & Spectre.
 author: desain
 image: TODO image
 icon: https://owlbear-peekaboo.pages.dev/logo.png
