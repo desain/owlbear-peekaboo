@@ -5,6 +5,7 @@ import type {
     Shape,
     ShapeType,
     Vector2,
+    Wall,
 } from "@owlbear-rodeo/sdk";
 import OBR, { MathM } from "@owlbear-rodeo/sdk";
 import { matrixMultiply, PI_6 } from "owlbear-utils";
@@ -43,7 +44,7 @@ export function getHexagonPoints(radius: number, angleOffset = 0): Vector2[] {
     });
 }
 
-export function getCurveWorldPoints(curve: Curve): Vector2[] {
+export function getWorldPoints(curve: Curve | Wall): Vector2[] {
     const transform = MathM.fromItem(curve);
     return curve.points.map((point) => matrixMultiply(transform, point));
 }
