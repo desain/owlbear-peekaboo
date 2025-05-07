@@ -15,23 +15,23 @@ import OBR, {
 } from "@owlbear-rodeo/sdk";
 import pen from "../../assets/pen.svg";
 import {
-    COLOR_PARTIAL_OBSTRUCTION,
+    COLOR_PARTIAL_COVER,
     ID_TOOL,
-    ID_TOOL_MODE_PARTIAL_OBSTRUCTIONS,
+    ID_TOOL_MODE_PARTIAL_COVER,
     ID_TOOL_MODE_PEN,
     CONTROL_METADATA as METADATA_CONTROL,
     METADATA_KEY_IS_PEEKABOO_CONTROL,
-    METADATA_KEY_OBSTRUCTION_PERMISSIVENESS,
+    METADATA_KEY_PERMISSIVENESS,
     METADATA_KEY_TOOL_PEN_ENABLED,
-    STYLE_OBSTRUCTION,
+    STYLE_PARTIAL_COVER,
 } from "../constants";
 
 function makePreviewLine(start: Vector2, end: Vector2): Line {
     return buildLine()
-        .name("Peekaboo Obstruction Builder Line")
+        .name("Peekaboo Cover Builder Line")
         .startPosition(start)
         .endPosition(end)
-        .style(STYLE_OBSTRUCTION)
+        .style(STYLE_PARTIAL_COVER)
         .metadata(METADATA_CONTROL)
         .disableHit(true)
         .locked(true)
@@ -39,14 +39,14 @@ function makePreviewLine(start: Vector2, end: Vector2): Line {
 }
 
 /**
- * Tool that allows the user to draw obstruction polygons
+ * Tool that allows the user to draw cover polygons
  */
-export class DrawObstructionMode implements ToolMode {
+export class DrawCoverMode implements ToolMode {
     readonly id = ID_TOOL_MODE_PEN;
     readonly icons = [
         {
             icon: pen,
-            label: "Draw Partial Obstruction",
+            label: "Draw Partial Cover",
             filter: {
                 activeTools: [ID_TOOL],
                 metadata: [
@@ -178,7 +178,7 @@ export class DrawObstructionMode implements ToolMode {
         }
 
         // Build item
-        const metadata = { [METADATA_KEY_OBSTRUCTION_PERMISSIVENESS]: 0.5 };
+        const metadata = { [METADATA_KEY_PERMISSIVENESS]: 0.5 };
         let result: Item;
         if (linesActual.length === 2 || linesActual.length === 3) {
             // pressed enter with just a first point and a preview line
@@ -186,15 +186,15 @@ export class DrawObstructionMode implements ToolMode {
             result = buildLine()
                 .startPosition(linesActual[0].startPosition)
                 .endPosition(linesActual[0].endPosition)
-                .name("Partial Obstruction")
-                .style(STYLE_OBSTRUCTION)
+                .name("Partial Cover")
+                .style(STYLE_PARTIAL_COVER)
                 .visible(false)
                 .metadata(metadata)
                 .locked(true)
                 .build();
         } else {
             result = buildCurve()
-                .name("Partial Obstruction")
+                .name("Partial Cover")
                 .points(
                     linesActual
                         // remove the preview line
@@ -202,8 +202,8 @@ export class DrawObstructionMode implements ToolMode {
                         .map((line) => line.startPosition),
                 )
                 .style({
-                    ...STYLE_OBSTRUCTION,
-                    fillColor: COLOR_PARTIAL_OBSTRUCTION,
+                    ...STYLE_PARTIAL_COVER,
+                    fillColor: COLOR_PARTIAL_COVER,
                     fillOpacity: 0.1,
                     tension: 0,
                 })
@@ -261,7 +261,7 @@ export class DrawObstructionMode implements ToolMode {
 
         // Disable pen tool
         void OBR.tool
-            .activateMode(ID_TOOL, ID_TOOL_MODE_PARTIAL_OBSTRUCTIONS)
+            .activateMode(ID_TOOL, ID_TOOL_MODE_PARTIAL_COVER)
             .then(() =>
                 OBR.tool.setMetadata(ID_TOOL, {
                     [METADATA_KEY_TOOL_PEN_ENABLED]: false,

@@ -19,14 +19,14 @@ import {
     METADATA_KEY_ROOM_CHARACTER_PERMISSIVENESS,
     METADATA_KEY_ROOM_CORNER_CONFIG,
 } from "../constants";
-import { isObstruction } from "../obstructions";
+import { isCover } from "../coverTypes";
 import { isToken } from "../Token";
 import {
     boundingBoxToLineString,
-    getRaycastObstruction,
+    getRaycastCover,
     wallToLineString,
-    type RaycastObstruction,
-} from "./raycastObstructions";
+    type RaycastCover,
+} from "./raycastCoverTypes";
 
 enableMapSet();
 
@@ -102,7 +102,7 @@ interface OwlbearStore {
         readonly lastIdSetSize: number;
         readonly geometry: FeatureCollection<LineString>;
     };
-    readonly partialObstructions: RaycastObstruction[];
+    readonly partialCover: RaycastCover[];
     readonly cornerConfigs: CornerCountConfigs;
     /**
      * How much of a vision line characters let through.
@@ -177,7 +177,7 @@ export const usePlayerStorage = create<PlayerStorage>()(
                     lastIdSetSize: 0,
                     geometry: featureCollection([]),
                 },
-                partialObstructions: [],
+                partialCover: [],
                 cornerConfigs: [
                     {
                         label: "Full Cover",
@@ -241,23 +241,23 @@ export const usePlayerStorage = create<PlayerStorage>()(
                                         getBoundingBox(item, state.grid),
                                     ] as const,
                             );
-                        const tokenObstructionFeatures =
-                            characterBoundingBoxes.map(([id, box]) =>
+                        const tokenPartialCover = characterBoundingBoxes.map(
+                            ([id, box]) =>
                                 boundingBoxToLineString(box, {
                                     characterId: id,
                                     permissiveness:
                                         state.characterPermissiveness,
                                 }),
-                            );
-                        const obstructionFeatures = items
-                            .filter(isObstruction)
-                            .map(getRaycastObstruction);
+                        );
+                        const partialCover = items
+                            .filter(isCover)
+                            .map(getRaycastCover);
 
                         return {
                             characterBoundingBoxes,
-                            partialObstructions: [
-                                ...tokenObstructionFeatures,
-                                ...obstructionFeatures,
+                            partialCover: [
+                                ...tokenPartialCover,
+                                ...partialCover,
                             ],
                         };
                     }),
@@ -304,9 +304,9 @@ export const usePlayerStorage = create<PlayerStorage>()(
                         ) {
                             state.characterPermissiveness =
                                 characterPermissiveness;
-                            for (const partialObstruction of state.partialObstructions) {
-                                if (partialObstruction.properties.characterId) {
-                                    partialObstruction.properties.permissiveness =
+                            for (const partialCover of state.partialCover) {
+                                if (partialCover.properties.characterId) {
+                                    partialCover.properties.permissiveness =
                                         characterPermissiveness;
                                 }
                             }

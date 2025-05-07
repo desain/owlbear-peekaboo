@@ -3,15 +3,15 @@ import woodenFence from "../../assets/wooden-fence.svg";
 import {
     ID_CONTEXT_MENU_CONVERT,
     ID_CONTEXT_MENU_REMOVE,
-    METADATA_KEY_OBSTRUCTION_PERMISSIVENESS,
-    STYLE_OBSTRUCTION,
+    METADATA_KEY_PERMISSIVENESS,
+    STYLE_PARTIAL_COVER,
 } from "../constants";
 import {
-    isObstructionCandidate,
-    KEY_FILTER_NON_OBSTRUCTION,
-    KEY_FILTER_OBSTRUCTION,
-    KEY_FILTERS_OBSTRUCTION_CANDIDATES,
-} from "../obstructions";
+    isCoverCandidate,
+    KEY_FILTER_COVER,
+    KEY_FILTER_NON_COVER,
+    KEY_FILTERS_COVER_CANDIDATES,
+} from "../coverTypes";
 import { usePlayerStorage } from "../state/usePlayerStorage";
 
 export async function startWatchingContextMenuEnabled(): Promise<VoidFunction> {
@@ -34,23 +34,21 @@ function installContextMenu() {
     return Promise.all([
         OBR.contextMenu.create({
             id: ID_CONTEXT_MENU_CONVERT,
-            icons: KEY_FILTERS_OBSTRUCTION_CANDIDATES.map((filter) => ({
+            icons: KEY_FILTERS_COVER_CANDIDATES.map((filter) => ({
                 icon: woodenFence,
-                label: "Make Partial Obstruction",
+                label: "Make Partial Cover",
                 filter: {
                     roles: ["GM"],
-                    some: [...filter, ...KEY_FILTER_NON_OBSTRUCTION],
+                    some: [...filter, ...KEY_FILTER_NON_COVER],
                 },
             })),
             onClick: (context) =>
                 OBR.scene.items.updateItems(context.items, (items) =>
-                    items.filter(isObstructionCandidate).forEach((item) => {
+                    items.filter(isCoverCandidate).forEach((item) => {
                         item.visible = false;
                         item.locked = true;
-                        item.metadata[
-                            METADATA_KEY_OBSTRUCTION_PERMISSIVENESS
-                        ] = 0.5;
-                        item.style = { ...item.style, ...STYLE_OBSTRUCTION };
+                        item.metadata[METADATA_KEY_PERMISSIVENESS] = 0.5;
+                        item.style = { ...item.style, ...STYLE_PARTIAL_COVER };
                     }),
                 ),
         }),
@@ -59,19 +57,17 @@ function installContextMenu() {
             icons: [
                 {
                     icon: woodenFence,
-                    label: "Remove Partial Obstruction",
+                    label: "Remove Partial Cover",
                     filter: {
                         roles: ["GM"],
-                        some: KEY_FILTER_OBSTRUCTION,
+                        some: KEY_FILTER_COVER,
                     },
                 },
             ],
             onClick: (context) =>
                 OBR.scene.items.updateItems(context.items, (items) =>
-                    items.filter(isObstructionCandidate).forEach((item) => {
-                        delete item.metadata[
-                            METADATA_KEY_OBSTRUCTION_PERMISSIVENESS
-                        ];
+                    items.filter(isCoverCandidate).forEach((item) => {
+                        delete item.metadata[METADATA_KEY_PERMISSIVENESS];
                     }),
                 ),
         }),

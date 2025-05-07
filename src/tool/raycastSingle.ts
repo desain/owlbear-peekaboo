@@ -8,10 +8,10 @@ import {
 import type { FeatureCollection, Point } from "geojson";
 import { matrixMultiply } from "owlbear-utils";
 import {
-    type RaycastObstruction,
+    type RaycastCover,
     isRaycastCircle,
     vector2ToPosition,
-} from "../state/raycastObstructions";
+} from "../state/raycastCoverTypes";
 import type { PlayerStorage } from "../state/usePlayerStorage";
 
 /**
@@ -51,29 +51,22 @@ function interceptCircleLineSeg(
 function intersect(
     start: Readonly<Vector2>,
     end: Readonly<Vector2>,
-    obstruction: RaycastObstruction,
+    cover: RaycastCover,
 ): FeatureCollection<Point> {
-    if (isRaycastCircle(obstruction)) {
+    if (isRaycastCircle(cover)) {
         const circleSpaceStart = matrixMultiply(
-            obstruction.inverseTransformCache,
+            cover.inverseTransformCache,
             start,
         );
-        const circleSpaceEnd = matrixMultiply(
-            obstruction.inverseTransformCache,
-            end,
-        );
+        const circleSpaceEnd = matrixMultiply(cover.inverseTransformCache, end);
         const circleSpaceIntersections = interceptCircleLineSeg(
-            obstruction.radius,
+            cover.radius,
             circleSpaceStart,
             circleSpaceEnd,
         );
         return featureCollection(
             circleSpaceIntersections.map((pt) =>
-                point(
-                    vector2ToPosition(
-                        matrixMultiply(obstruction.transform, pt),
-                    ),
-                ),
+                point(vector2ToPosition(matrixMultiply(cover.transform, pt))),
             ),
         );
     } else {
@@ -81,7 +74,7 @@ function intersect(
             [start.x, start.y],
             [end.x, end.y],
         ]);
-        return lineIntersect(ray, obstruction);
+        return lineIntersect(ray, cover);
     }
 }
 
@@ -94,17 +87,17 @@ export function raycastSingle(
     start: Readonly<Vector2>,
     end: Readonly<Vector2>,
     /**
-     * ID of origin obstruction. Ignored because lines coming from origin won't be
+     * ID of origin cover item. Ignored because lines coming from origin won't be
      * blocked by origin.
      */
     originId?: string,
     /**
-     * ID of destination obstruction. Ignored because lines going to destination won't be
+     * ID of destination cover item. Ignored because lines going to destination won't be
      * blocked by destination.
      */
     destinationId?: string,
 ): Vector2 | number {
-    // Check for blocking obstructions
+    // Check for blocking cover
     let closestPt: Vector2 | null = null;
     let minDistSq = Infinity;
     for (const wall of state.walls.geometry.features) {
@@ -130,34 +123,31 @@ export function raycastSingle(
         return closestPt;
     }
 
-    // Check for partial obstructions
-    const blockingObstruction = state.partialObstructions.find(
-        (obstruction) => {
-            // Skip obstructions corresponding to the origin or destination
-            if (
-                (originId && obstruction.properties.characterId === originId) ||
-                (destinationId &&
-                    obstruction.properties.characterId === destinationId)
-            ) {
-                return false;
-            }
-            const intersections = intersect(start, end, obstruction);
-            // Filter out intersections that are exactly at the origin or end
-            const filteredIntersections = intersections.features.filter(
-                ({
-                    geometry: {
-                        coordinates: [x, y],
-                    },
-                }) =>
-                    (x !== start.x || y !== start.y) &&
-                    (x !== end.x || y !== end.y),
-            );
-            if (filteredIntersections.length === 0) {
-                return false;
-            }
-            return true;
-        },
-    );
+    // Check for partial cover
+    const blockingCover = state.partialCover.find((cover) => {
+        // Skip cover corresponding to the origin or destination
+        if (
+            (originId && cover.properties.characterId === originId) ||
+            (destinationId && cover.properties.characterId === destinationId)
+        ) {
+            return false;
+        }
+        const intersections = intersect(start, end, cover);
+        // Filter out intersections that are exactly at the origin or end
+        const filteredIntersections = intersections.features.filter(
+            ({
+                geometry: {
+                    coordinates: [x, y],
+                },
+            }) =>
+                (x !== start.x || y !== start.y) &&
+                (x !== end.x || y !== end.y),
+        );
+        if (filteredIntersections.length === 0) {
+            return false;
+        }
+        return true;
+    });
 
-    return blockingObstruction?.properties.permissiveness ?? 1;
+    return blockingCover?.properties.permissiveness ?? 1;
 }
