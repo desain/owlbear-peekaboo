@@ -203,12 +203,12 @@ export class PartialCoverMode implements ToolMode {
         const handleNewItems = (items: Item[]) =>
             this.#updateIcons(
                 items,
-                usePlayerStorage.getState().characterPermissiveness,
+                usePlayerStorage.getState().roomMetadata.characterPermissiveness,
             );
         // Subscribe to item and config updates
         const unsubscribeItems = OBR.scene.items.onChange(handleNewItems);
         const unsubscribePermissiveness = usePlayerStorage.subscribe(
-            (state) => state.characterPermissiveness,
+            (state) => state.roomMetadata.characterPermissiveness,
             (characterPermissiveness) =>
                 OBR.scene.items
                     .getItems()

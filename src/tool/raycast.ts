@@ -60,7 +60,9 @@ export function raycast(
         }
     });
 
-    const cornerConfig = state.cornerConfigs[Math.floor(numCastsSucceeded)] ?? {
+    const cornerConfig = state.roomMetadata.cornerConfigs[
+        Math.floor(numCastsSucceeded)
+    ] ?? {
         label: "",
         color: COLOR_BACKUP,
     };

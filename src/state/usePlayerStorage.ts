@@ -5,7 +5,6 @@ import type { FeatureCollection, LineString } from "geojson";
 import { enableMapSet } from "immer";
 import {
     getId,
-    isObject,
     type ExtractNonFunctions,
     type GridParams,
     type GridParsed,
@@ -16,8 +15,7 @@ import { persist, subscribeWithSelector } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import {
     LOCAL_STORAGE_STORE_NAME,
-    METADATA_KEY_ROOM_CHARACTER_PERMISSIVENESS,
-    METADATA_KEY_ROOM_CORNER_CONFIG,
+    METADATA_KEY_ROOM_METADATA,
 } from "../constants";
 import { isCover } from "../coverTypes";
 import { isToken } from "../Token";
@@ -27,6 +25,7 @@ import {
     wallToLineString,
     type RaycastCover,
 } from "./raycastCoverTypes";
+import { isRoomMetadata, type RoomMetadata } from "./roomMetadata";
 
 enableMapSet();
 
@@ -56,42 +55,6 @@ function partializeLocalStorage({
     };
 }
 
-interface CornerCountConfig {
-    /**
-     * What label to show based on how many corners are visible.
-     */
-    readonly label: string;
-    /**
-     * What color to show based on how many corners are visible.
-     */
-    readonly color: string;
-}
-function isCornerCountConfig(config: unknown): config is CornerCountConfig {
-    return (
-        isObject(config) &&
-        "label" in config &&
-        typeof config.label === "string" &&
-        "color" in config &&
-        typeof config.color === "string"
-    );
-}
-export type CornerCountConfigs = [
-    c0: CornerCountConfig,
-    c1: CornerCountConfig,
-    c2: CornerCountConfig,
-    c3: CornerCountConfig,
-    c4: CornerCountConfig,
-    c5: CornerCountConfig,
-    c6: CornerCountConfig,
-];
-function isCornerCountConfigs(configs: unknown): configs is CornerCountConfigs {
-    return (
-        Array.isArray(configs) &&
-        configs.length === 7 &&
-        configs.every(isCornerCountConfig)
-    );
-}
-
 interface OwlbearStore {
     readonly role: Role;
     readonly sceneReady: boolean;
@@ -103,11 +66,8 @@ interface OwlbearStore {
         readonly geometry: FeatureCollection<LineString>;
     };
     readonly partialCover: RaycastCover[];
-    readonly cornerConfigs: CornerCountConfigs;
-    /**
-     * How much of a vision line characters let through.
-     */
-    readonly characterPermissiveness: number;
+    readonly roomMetadata: RoomMetadata;
+
     readonly setRole: (this: void, role: Role) => void;
     readonly setSceneReady: (this: void, sceneReady: boolean) => void;
     readonly setGrid: (this: void, grid: GridParams) => Promise<void>;
@@ -178,37 +138,40 @@ export const usePlayerStorage = create<PlayerStorage>()(
                     geometry: featureCollection([]),
                 },
                 partialCover: [],
-                cornerConfigs: [
-                    {
-                        label: "Full Cover",
-                        color: "#c97b7b",
-                    },
-                    {
-                        label: "3/4 Cover",
-                        color: "#d1a17b",
-                    },
-                    {
-                        label: "Half Cover",
-                        color: "#d6c97b",
-                    },
-                    {
-                        label: "No Cover",
-                        color: "#a7c97b",
-                    },
-                    {
-                        label: "No Cover",
-                        color: "#7bc97b",
-                    },
-                    {
-                        label: "No Cover",
-                        color: "#64d364",
-                    },
-                    {
-                        label: "No Cover",
-                        color: "#49dd49",
-                    },
-                ],
-                characterPermissiveness: 0.5,
+                roomMetadata: {
+                    characterPermissiveness: 0.5,
+
+                    cornerConfigs: [
+                        {
+                            label: "Full Cover",
+                            color: "#c97b7b",
+                        },
+                        {
+                            label: "3/4 Cover",
+                            color: "#d1a17b",
+                        },
+                        {
+                            label: "Half Cover",
+                            color: "#d6c97b",
+                        },
+                        {
+                            label: "No Cover",
+                            color: "#a7c97b",
+                        },
+                        {
+                            label: "No Cover",
+                            color: "#7bc97b",
+                        },
+                        {
+                            label: "No Cover",
+                            color: "#64d364",
+                        },
+                        {
+                            label: "No Cover",
+                            color: "#49dd49",
+                        },
+                    ],
+                },
                 setRole: (role: Role) => set({ role }),
                 setSceneReady: (sceneReady: boolean) => set({ sceneReady }),
                 setGrid: async (grid: GridParams) => {
@@ -246,7 +209,8 @@ export const usePlayerStorage = create<PlayerStorage>()(
                                 boundingBoxToLineString(box, {
                                     characterId: id,
                                     permissiveness:
-                                        state.characterPermissiveness,
+                                        state.roomMetadata
+                                            .characterPermissiveness,
                                 }),
                         );
                         const partialCover = items
@@ -285,33 +249,20 @@ export const usePlayerStorage = create<PlayerStorage>()(
                         },
                     });
                 },
-                handleRoomMetadataChange: (metadata: Metadata) =>
-                    set((state) => {
-                        const cornerConfigs =
-                            metadata[METADATA_KEY_ROOM_CORNER_CONFIG];
-                        if (isCornerCountConfigs(cornerConfigs)) {
-                            state.cornerConfigs = cornerConfigs;
-                        }
-
-                        const characterPermissiveness =
-                            metadata[
-                                METADATA_KEY_ROOM_CHARACTER_PERMISSIVENESS
-                            ];
-                        if (
-                            typeof characterPermissiveness === "number" &&
-                            characterPermissiveness >= 0 &&
-                            characterPermissiveness <= 1
-                        ) {
-                            state.characterPermissiveness =
-                                characterPermissiveness;
+                handleRoomMetadataChange: (metadata: Metadata) => {
+                    const roomMetadata = metadata[METADATA_KEY_ROOM_METADATA];
+                    if (isRoomMetadata(roomMetadata)) {
+                        set((state) => {
+                            state.roomMetadata = roomMetadata;
                             for (const partialCover of state.partialCover) {
                                 if (partialCover.properties.characterId) {
                                     partialCover.properties.permissiveness =
-                                        characterPermissiveness;
+                                        roomMetadata.characterPermissiveness;
                                 }
                             }
-                        }
-                    }),
+                        });
+                    }
+                },
             })),
             {
                 name: LOCAL_STORAGE_STORE_NAME,
