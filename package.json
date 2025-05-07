@@ -34,7 +34,7 @@
     "@mui/material": "^7.1.0",
     "@owlbear-rodeo/sdk": "^3.1.0",
     "@turf/turf": "^7.2.0",
-    "globals": "^16.0.0",
+    "globals": "^16.1.0",
     "immer": "^10.1.1",
     "owlbear-utils": "file:../owlbear-utils",
     "react": "^19.1.0",

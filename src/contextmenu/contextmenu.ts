@@ -38,6 +38,7 @@ function installContextMenu() {
                 icon: woodenFence,
                 label: "Make Partial Obstruction",
                 filter: {
+                    roles: ["GM"],
                     some: [...filter, ...KEY_FILTER_NON_OBSTRUCTION],
                 },
             })),
@@ -58,6 +59,7 @@ function installContextMenu() {
                     icon: woodenFence,
                     label: "Remove Partial Obstruction",
                     filter: {
+                        roles: ["GM"],
                         some: KEY_FILTER_OBSTRUCTION,
                     },
                 },

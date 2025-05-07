@@ -8,6 +8,7 @@ import {
     type ExtractNonFunctions,
     type GridParams,
     type GridParsed,
+    type Role,
 } from "owlbear-utils";
 import { create } from "zustand";
 import { persist, subscribeWithSelector } from "zustand/middleware";
@@ -69,6 +70,7 @@ function partializeLocalStorage({
 }
 
 interface OwlbearStore {
+    role: Role;
     sceneReady: boolean;
     grid: GridParsed;
     characterBoundingBoxes: [id: string, box: BoundingBox][];
@@ -78,6 +80,7 @@ interface OwlbearStore {
         geometry: FeatureCollection<LineString>;
     };
     partialObstructions: RaycastObstruction[];
+    setRole: (this: void, role: Role) => void;
     setSceneReady: (this: void, sceneReady: boolean) => void;
     setGrid: (this: void, grid: GridParams) => Promise<void>;
     getGridCorners: (this: void) => number;
@@ -162,6 +165,7 @@ export const usePlayerStorage = create<PlayerStorage>()(
                     set({ contextMenuEnabled }),
 
                 // owlbear store
+                role: "PLAYER",
                 sceneReady: false,
                 grid: {
                     dpi: -1,
@@ -180,6 +184,7 @@ export const usePlayerStorage = create<PlayerStorage>()(
                     geometry: featureCollection([]),
                 },
                 partialObstructions: [],
+                setRole: (role: Role) => set({ role }),
                 setSceneReady: (sceneReady: boolean) => set({ sceneReady }),
                 setGrid: async (grid: GridParams) => {
                     const parsedScale = (await OBR.scene.grid.getScale())
