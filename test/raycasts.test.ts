@@ -14,7 +14,7 @@ describe("raycastSingle", () => {
         },
     };
     const SQUARE_TOP_RIGHT_OF_ORIGIN: Partial<PlayerStorage> = {
-        partialObstructions: [
+        partialCover: [
             // Square to the top right of the origin
             lineString(
                 [
@@ -60,7 +60,7 @@ describe("raycastSingle", () => {
         expect(result).toEqual(1);
     });
 
-    it("Shouldn't return obstructions for start-adjacent objects", () => {
+    it("Shouldn't return cover for start-adjacent objects", () => {
         const state: PlayerStorage = {
             ...NO_WALLS,
             ...SQUARE_TOP_RIGHT_OF_ORIGIN,
@@ -74,7 +74,7 @@ describe("raycastSingle", () => {
         expect(result).toEqual(1);
     });
 
-    it("Shouldn't return obstructions for end-adjacent objects", () => {
+    it("Shouldn't return cover for end-adjacent objects", () => {
         const state: PlayerStorage = {
             ...NO_WALLS,
             ...SQUARE_TOP_RIGHT_OF_ORIGIN,
@@ -88,7 +88,7 @@ describe("raycastSingle", () => {
         expect(result).toEqual(1);
     });
 
-    it("Shouldn't return obstructions for both start and end-adjacent objects", () => {
+    it("Shouldn't return cover for both start and end-adjacent objects", () => {
         const state: PlayerStorage = {
             ...NO_WALLS,
             ...SQUARE_TOP_RIGHT_OF_ORIGIN,

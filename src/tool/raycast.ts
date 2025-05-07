@@ -1,9 +1,9 @@
 import type { Vector2 } from "@owlbear-rodeo/sdk";
 import {
     COLOR_BACKUP,
-    COLOR_NO_OBSTRUCTION,
-    COLOR_OBSTRUCTED,
-    COLOR_PARTIAL_OBSTRUCTION,
+    COLOR_BLOCKED,
+    COLOR_PARTIAL_COVER,
+    COLOR_UNBLOCKED,
 } from "../constants";
 import { usePlayerStorage } from "../state/usePlayerStorage";
 import { getGridCorners } from "./gridUtils";
@@ -50,15 +50,12 @@ export function raycast(
             numCastsSucceeded += result;
             return {
                 endPosition: corner,
-                color:
-                    result === 1
-                        ? COLOR_NO_OBSTRUCTION
-                        : COLOR_PARTIAL_OBSTRUCTION,
+                color: result === 1 ? COLOR_UNBLOCKED : COLOR_PARTIAL_COVER,
             };
         } else {
             return {
                 endPosition: result,
-                color: COLOR_OBSTRUCTED,
+                color: COLOR_BLOCKED,
             };
         }
     });

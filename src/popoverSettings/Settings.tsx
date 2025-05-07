@@ -59,6 +59,9 @@ export function Settings() {
             {role === "GM" && (
                 <>
                     <FormGroup sx={{ mb: 2 }}>
+                        <Typography sx={{ mb: 2 }}>
+                            Room Settings (GM Only)
+                        </Typography>
                         <FormControlLabel
                             control={
                                 <Switch
@@ -70,11 +73,11 @@ export function Settings() {
                                     }
                                 />
                             }
-                            label="Characters are partial obstructions"
+                            label="Characters are partial cover"
                         />
                         <FormHelperText>
-                            If enabled, characters will count as partial
-                            obstructions for visibility.
+                            If enabled, characters will count as partial cover
+                            for visibility.
                         </FormHelperText>
                     </FormGroup>
                     <FormGroup sx={{ mb: 2 }}>
@@ -91,8 +94,7 @@ export function Settings() {
                         />
                         <FormHelperText>
                             If enabled, right-clicking a polygon or line will
-                            show a menu to convert it into a partial
-                            obstruction.
+                            show a menu to convert it into partial cover.
                         </FormHelperText>
                     </FormGroup>
                     <FormGroup>

@@ -18,8 +18,8 @@ import {
 } from "../constants";
 import { openSettings } from "../popoverSettings/openSettings";
 import { usePlayerStorage } from "../state/usePlayerStorage";
-import { DrawObstructionMode } from "./DrawObstructionMode";
-import { PartialObstructionMode } from "./PartialObstructionMode";
+import { DrawCoverMode } from "./DrawCoverMode";
+import { PartialCoverMode } from "./PartialCoverMode";
 import { VisibilityMode } from "./VisibilityMode";
 
 export async function startWatchingToolEnabled(): Promise<VoidFunction> {
@@ -39,7 +39,7 @@ export async function startWatchingToolEnabled(): Promise<VoidFunction> {
 }
 
 async function installTool() {
-    const drawObstructionMode = new DrawObstructionMode();
+    const drawCoverMode = new DrawCoverMode();
     await Promise.all([
         OBR.tool.create({
             id: ID_TOOL,
@@ -55,11 +55,11 @@ async function installTool() {
         }),
         OBR.tool.createMode(new VisibilityMode()),
         OBR.tool.createMode(
-            new PartialObstructionMode((clickPosition) =>
-                drawObstructionMode.setInputPosition(clickPosition),
+            new PartialCoverMode((clickPosition) =>
+                drawCoverMode.setInputPosition(clickPosition),
             ),
         ),
-        OBR.tool.createMode(drawObstructionMode),
+        OBR.tool.createMode(drawCoverMode),
         OBR.tool.createAction({
             id: ID_TOOL_ACTION_SWITCH_PRIVATE,
             shortcut: "P",

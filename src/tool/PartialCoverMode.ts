@@ -24,17 +24,17 @@ import woodenFence from "../../assets/wooden-fence.svg";
 import {
     CONTROL_METADATA,
     ID_TOOL,
-    ID_TOOL_MODE_PARTIAL_OBSTRUCTIONS,
+    ID_TOOL_MODE_PARTIAL_COVER,
     ID_TOOL_MODE_PEN,
-    METADATA_KEY_OBSTRUCTION_PERMISSIVENESS,
+    METADATA_KEY_PERMISSIVENESS,
     METADATA_KEY_TOOL_PEN_ENABLED,
 } from "../constants";
-import type { ObstructionCandidate } from "../obstructions";
+import type { CoverCandidate } from "../coverTypes";
 import {
-    isObstruction,
-    isObstructionCandidate,
-    KEY_FILTERS_OBSTRUCTION_CANDIDATES,
-} from "../obstructions";
+    isCover,
+    isCoverCandidate,
+    KEY_FILTERS_COVER_CANDIDATES,
+} from "../coverTypes";
 import { usePlayerStorage } from "../state/usePlayerStorage";
 import type { Token } from "../Token";
 import { isToken } from "../Token";
@@ -50,18 +50,15 @@ const ROLES: Role[] = ["GM"];
 type HoverState = "add" | "remove";
 
 /**
- * @returns Hover state of the given obstruction when hovered over.
+ * @returns Hover state of the given cover item when hovered over.
  */
-function getHoverState(item: ObstructionCandidate): HoverState {
-    return item.metadata[METADATA_KEY_OBSTRUCTION_PERMISSIVENESS] !== undefined
+function getHoverState(item: CoverCandidate): HoverState {
+    return item.metadata[METADATA_KEY_PERMISSIVENESS] !== undefined
         ? "remove"
         : "add";
 }
 
-function getIconSource(
-    item: ObstructionCandidate,
-    hoverState?: HoverState,
-): string {
+function getIconSource(item: CoverCandidate, hoverState?: HoverState): string {
     if (hoverState === "add") {
         return window.location.origin + woodenFenceAdd;
     } else if (hoverState === "remove") {
@@ -69,11 +66,11 @@ function getIconSource(
     }
     return (
         window.location.origin +
-        (isObstruction(item) ? woodenFence : woodenFenceQuestion)
+        (isCover(item) ? woodenFence : woodenFenceQuestion)
     );
 }
 
-function getIconPosition(item: ObstructionCandidate): Vector2 {
+function getIconPosition(item: CoverCandidate): Vector2 {
     if (isCurve(item)) {
         return Math2.centroid(getCurveWorldPoints(item));
     } else if (isLine(item)) {
@@ -86,13 +83,13 @@ function getIconPosition(item: ObstructionCandidate): Vector2 {
         }
     } else {
         console.error(
-            "Unknown obstruction type, defaulting to icon at item position",
+            "Unknown cover type, defaulting to icon at item position",
         );
         return (item as Item).position;
     }
 }
 
-function createIcon(item: ObstructionCandidate): Image {
+function createIcon(item: CoverCandidate): Image {
     const size = 150;
 
     const imageContent: ImageContent = {
@@ -156,15 +153,15 @@ function createIconForToken(token: Token): Image {
 }
 
 /**
- * Mode which allows the user to designate some lines/shapes/polygons as partial obstructions.
+ * Mode which allows the user to designate some lines/shapes/polygons as partial cover.
  */
-export class PartialObstructionMode implements ToolMode {
-    readonly id = ID_TOOL_MODE_PARTIAL_OBSTRUCTIONS;
+export class PartialCoverMode implements ToolMode {
+    readonly id = ID_TOOL_MODE_PARTIAL_COVER;
     readonly shortcut = "O";
     readonly icons = [
         {
             icon: woodenFence,
-            label: "Create Partial Obstructions",
+            label: "Create Partial Cover",
             filter: {
                 activeTools: [ID_TOOL],
                 roles: ROLES,
@@ -173,7 +170,7 @@ export class PartialObstructionMode implements ToolMode {
     ];
 
     readonly cursors = [
-        ...KEY_FILTERS_OBSTRUCTION_CANDIDATES.map((targetFilter) => ({
+        ...KEY_FILTERS_COVER_CANDIDATES.map((targetFilter) => ({
             cursor: "pointer",
             filter: {
                 target: targetFilter,
@@ -194,9 +191,9 @@ export class PartialObstructionMode implements ToolMode {
      */
     #unsubscribe?: VoidFunction;
     /**
-     * Info about the obstruction we're hovering over, or undefined if we're not hovering.
+     * Info about the cover item we're hovering over, or undefined if we're not hovering.
      */
-    #hoveredObstructionId?: string;
+    #hoverCoverId?: string;
 
     constructor(handleMapClick: (position: Vector2) => void) {
         this.#handleMapClick = handleMapClick;
@@ -243,10 +240,10 @@ export class PartialObstructionMode implements ToolMode {
         const toDelete: string[] = [];
         const toUpdate: [iconId: string, imageSource: string][] = [];
 
-        const candidates = items.filter(isObstructionCandidate);
+        const candidates = items.filter(isCoverCandidate);
         const tokens = items.filter(isToken);
 
-        // Remove icons for obstructions/tokens that should longer exist
+        // Remove icons for cover/tokens that should longer exist
         const currentIds = new Set([
             ...candidates.map(getId),
             ...tokens.map(getId),
@@ -258,12 +255,12 @@ export class PartialObstructionMode implements ToolMode {
             }
         }
 
-        // Add icons for new obstruction candidates
+        // Add icons for new cover candidates
         for (const candidate of candidates) {
             const [iconId] = this.#iconMap.get(candidate.id) ?? [];
             if (iconId) {
                 const hoverState =
-                    this.#hoveredObstructionId === candidate.id
+                    this.#hoverCoverId === candidate.id
                         ? getHoverState(candidate)
                         : undefined;
                 toUpdate.push([iconId, getIconSource(candidate, hoverState)]);
@@ -303,26 +300,26 @@ export class PartialObstructionMode implements ToolMode {
     readonly onToolMove = (_context: ToolContext, event: ToolEvent) => {
         const target = event.target;
 
-        // early exit if we're moving over the same obstruction, or over no obstruction
-        if (target?.id === this.#hoveredObstructionId) {
+        // early exit if we're moving over the same cover, or over no cover
+        if (target?.id === this.#hoverCoverId) {
             return;
         }
 
         // by here we know that we're changing state, so cleanup prev
 
-        if (this.#hoveredObstructionId) {
-            const oldHoveredId = this.#hoveredObstructionId;
-            this.#hoveredObstructionId = undefined;
+        if (this.#hoverCoverId) {
+            const oldHoveredId = this.#hoverCoverId;
+            this.#hoverCoverId = undefined;
             const [iconId] = this.#iconMap.get(oldHoveredId) ?? [];
             if (iconId) {
                 void (async () => {
-                    const [obstruction] = await OBR.scene.items.getItems<Curve>(
-                        [oldHoveredId],
-                    );
-                    if (!isObstructionCandidate(obstruction)) {
+                    const [cover] = await OBR.scene.items.getItems<Curve>([
+                        oldHoveredId,
+                    ]);
+                    if (!isCoverCandidate(cover)) {
                         return;
                     }
-                    const newUrl = getIconSource(obstruction);
+                    const newUrl = getIconSource(cover);
                     await OBR.scene.local.updateItems<Image>(
                         [iconId],
                         ([icon]) => {
@@ -339,7 +336,7 @@ export class PartialObstructionMode implements ToolMode {
 
         // if we're moving on to a next target, update its icon
 
-        if (target && isObstructionCandidate(target)) {
+        if (target && isCoverCandidate(target)) {
             const [iconId] = this.#iconMap.get(target.id) ?? [];
             if (iconId) {
                 const newUrl = getIconSource(target, getHoverState(target));
@@ -348,7 +345,7 @@ export class PartialObstructionMode implements ToolMode {
                         icon.image.url = newUrl;
                     }
                 });
-                this.#hoveredObstructionId = target.id;
+                this.#hoverCoverId = target.id;
             } else {
                 console.warn("Moving to non-tracked item", target.id);
             }
@@ -359,22 +356,18 @@ export class PartialObstructionMode implements ToolMode {
         void this; // stop complaint about class method without 'this'.
         const target = event.target;
 
-        if (target && isObstructionCandidate(target)) {
-            if (target.metadata[METADATA_KEY_OBSTRUCTION_PERMISSIVENESS]) {
+        if (target && isCoverCandidate(target)) {
+            if (target.metadata[METADATA_KEY_PERMISSIVENESS]) {
                 void OBR.scene.items.updateItems([target], ([target]) => {
-                    delete target.metadata[
-                        METADATA_KEY_OBSTRUCTION_PERMISSIVENESS
-                    ];
+                    delete target.metadata[METADATA_KEY_PERMISSIVENESS];
                 });
             } else {
                 void OBR.scene.items.updateItems([target], ([target]) => {
-                    target.metadata[
-                        METADATA_KEY_OBSTRUCTION_PERMISSIVENESS
-                    ] = 0.5;
+                    target.metadata[METADATA_KEY_PERMISSIVENESS] = 0.5;
                 });
             }
         } else {
-            // start drawing obstruction
+            // start drawing cover
             this.#handleMapClick(event.pointerPosition);
             void OBR.tool
                 .setMetadata(ID_TOOL, { [METADATA_KEY_TOOL_PEN_ENABLED]: true })
