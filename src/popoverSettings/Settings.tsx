@@ -12,10 +12,7 @@ import { useRehydrate } from "owlbear-utils";
 import { useEffect, useState } from "react";
 import { version } from "../../package.json";
 import { COLOR_BACKUP } from "../constants";
-import {
-    setCharacterPermissiveness,
-    setCornerCountConfigs,
-} from "../state/roomMetadata";
+import { setRoomMetadata } from "../state/roomMetadata";
 import { usePlayerStorage } from "../state/usePlayerStorage";
 
 export function Settings() {
@@ -25,9 +22,7 @@ export function Settings() {
     const setSnapOrigin = usePlayerStorage((store) => store.setSnapOrigin);
     const numGridCorners = usePlayerStorage((store) => store.getGridCorners());
 
-    const characterPermissiveness = usePlayerStorage(
-        (store) => store.characterPermissiveness,
-    );
+    const roomMetadata = usePlayerStorage((store) => store.roomMetadata);
 
     const contextMenuEnabled = usePlayerStorage(
         (store) => store.contextMenuEnabled,
@@ -38,21 +33,20 @@ export function Settings() {
 
     const role = usePlayerStorage((store) => store.role);
 
-    const cornerConfigs = usePlayerStorage((store) => store.cornerConfigs);
     // debouncing
-    const [localCornerConfigs, setLocalCornerConfigs] = useState(cornerConfigs);
-    // Keep local state in sync if cornerConfigs changes externally
+    const [localRoomMetadata, setLocalRoomMetadata] = useState(roomMetadata);
+    // Keep local state in sync if room metadata changes externally
     useEffect(() => {
-        setLocalCornerConfigs(cornerConfigs);
-    }, [cornerConfigs]);
+        setLocalRoomMetadata(roomMetadata);
+    }, [roomMetadata]);
     useEffect(() => {
         const applyChange = setTimeout(async () => {
-            if (localCornerConfigs !== cornerConfigs) {
-                await setCornerCountConfigs(localCornerConfigs);
+            if (localRoomMetadata !== roomMetadata) {
+                await setRoomMetadata(localRoomMetadata);
             }
         }, 1000);
         return () => clearTimeout(applyChange);
-    }, [localCornerConfigs, cornerConfigs]);
+    }, [localRoomMetadata, roomMetadata]);
 
     return (
         <Box sx={{ p: 2, minWidth: 300 }}>
@@ -80,10 +74,21 @@ export function Settings() {
                         <FormControlLabel
                             control={
                                 <Switch
-                                    checked={characterPermissiveness === 0.5}
+                                    checked={
+                                        localRoomMetadata.characterPermissiveness ===
+                                        0.5
+                                    }
                                     onChange={(e) =>
-                                        setCharacterPermissiveness(
-                                            e.target.checked ? 0.5 : 1,
+                                        setLocalRoomMetadata(
+                                            produce(
+                                                localRoomMetadata,
+                                                (roomMetadata) => {
+                                                    roomMetadata.characterPermissiveness =
+                                                        e.target.checked
+                                                            ? 0.5
+                                                            : 1;
+                                                },
+                                            ),
                                         )
                                     }
                                 />
@@ -131,14 +136,18 @@ export function Settings() {
                                     label={`${n} visible corner${
                                         n !== 1 ? "s" : ""
                                     }`}
-                                    value={localCornerConfigs[n].label ?? ""}
+                                    value={
+                                        localRoomMetadata.cornerConfigs[n]
+                                            .label ?? ""
+                                    }
                                     onChange={(e) =>
-                                        setLocalCornerConfigs(
+                                        setLocalRoomMetadata(
                                             produce(
-                                                cornerConfigs,
-                                                (cornerConfigs) => {
-                                                    cornerConfigs[n].label =
-                                                        e.target.value;
+                                                localRoomMetadata,
+                                                (roomMetadata) => {
+                                                    roomMetadata.cornerConfigs[
+                                                        n
+                                                    ].label = e.target.value;
                                                 },
                                             ),
                                         )
@@ -150,16 +159,17 @@ export function Settings() {
                                 <input
                                     type="color"
                                     value={
-                                        localCornerConfigs[n].color ??
-                                        COLOR_BACKUP
+                                        localRoomMetadata.cornerConfigs[n]
+                                            .color ?? COLOR_BACKUP
                                     }
                                     onChange={(e) =>
-                                        setLocalCornerConfigs(
+                                        setLocalRoomMetadata(
                                             produce(
-                                                cornerConfigs,
-                                                (cornerConfigs) => {
-                                                    cornerConfigs[n].color =
-                                                        e.target.value;
+                                                localRoomMetadata,
+                                                (roomMetadata) => {
+                                                    roomMetadata.cornerConfigs[
+                                                        n
+                                                    ].color = e.target.value;
                                                 },
                                             ),
                                         )

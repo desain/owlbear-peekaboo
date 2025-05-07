@@ -36,8 +36,7 @@ export const METADATA_KEY_TOOL_PEN_ENABLED = `${PLUGIN_ID}/penEnabled`;
 export const METADATA_KEY_TOOL_MEASURE_PRIVATE = `${PLUGIN_ID}/measurePrivate`;
 export const METADATA_KEY_IS_PEEKABOO_CONTROL = `${PLUGIN_ID}/isControl`;
 export const METADATA_KEY_PERMISSIVENESS = `${PLUGIN_ID}/coverPermissiveness`;
-export const METADATA_KEY_ROOM_CORNER_CONFIG = `${PLUGIN_ID}/cornerConfig`;
-export const METADATA_KEY_ROOM_CHARACTER_PERMISSIVENESS = `${PLUGIN_ID}/characterPermissiveness`;
+export const METADATA_KEY_ROOM_METADATA = `${PLUGIN_ID}/roomMetadata`;
 export const CONTROL_METADATA: Metadata = {
     [METADATA_KEY_IS_PEEKABOO_CONTROL]: true,
 };

@@ -87,6 +87,7 @@ To make a production build run:
 -   Figure out how to set different types of partial cover (3/4, etc)
 -   Paths as cover - context menu turns them into line strings
 -   Cleanup shouldn't destroy active measurements
+-   take color input from utils once utils has it
 
 ## License
 
