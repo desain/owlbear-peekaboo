@@ -1,6 +1,6 @@
 import type { BoundingBox } from "@owlbear-rodeo/sdk";
 import { describe, expect, it } from "vitest";
-import { boundingBoxContains } from "./utils";
+import { boundingBoxContains } from "../src/utils";
 
 describe("boundingBoxContains", () => {
     const TEST_BOX: BoundingBox = {
