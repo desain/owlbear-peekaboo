@@ -1,7 +1,7 @@
 import type { Curve, Item, KeyFilter, Line, Shape } from "@owlbear-rodeo/sdk";
 import { isCurve, isLine, isShape } from "@owlbear-rodeo/sdk";
 import type { HasParameterizedMetadata } from "owlbear-utils";
-import { METADATA_KEY_CURVE_PERMISSIVENESS as METADATA_KEY_OBSTRUCTION_PERMISSIVENESS } from "./constants";
+import { METADATA_KEY_OBSTRUCTION_PERMISSIVENESS } from "./constants";
 
 // General obstructions
 const SMOKE_AND_SPECTRE_IS_VISION_LINE = "com.battle-system.smoke/isVisionLine";

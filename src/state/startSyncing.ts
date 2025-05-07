@@ -62,6 +62,13 @@ export function startSyncing(): [
         store.updateLocalItems,
     );
 
+    const roomMetadataInitialized = OBR.room
+        .getMetadata()
+        .then(store.handleRoomMetadataChange);
+    const unsubscribeRoomMetadata = OBR.room.onMetadataChange(
+        store.handleRoomMetadataChange,
+    );
+
     const uninstallStorageHandler = startRehydrating(usePlayerStorage);
 
     return [
@@ -71,6 +78,7 @@ export function startSyncing(): [
             gridInitialized,
             itemsInitialized,
             localItemsInitialized,
+            roomMetadataInitialized,
         ]).then(() => void 0),
         deferCallAll(
             unsubscribePlayer,
@@ -78,6 +86,7 @@ export function startSyncing(): [
             unsubscribeGrid,
             unsubscribeItems,
             unsubscribeLocalItems,
+            unsubscribeRoomMetadata,
             uninstallStorageHandler,
         ),
     ];

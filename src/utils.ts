@@ -12,7 +12,7 @@ import OBR, { isLine, isShape, MathM } from "@owlbear-rodeo/sdk";
 import { lineString } from "@turf/turf";
 import type { Feature, LineString, Position } from "geojson";
 import { isObject, matrixMultiply, PI_6 } from "owlbear-utils";
-import { METADATA_KEY_CURVE_PERMISSIVENESS } from "./constants";
+import { METADATA_KEY_OBSTRUCTION_PERMISSIVENESS } from "./constants";
 import type { Obstruction } from "./obstructions";
 import { isObstructionPolygon } from "./obstructions";
 
@@ -166,7 +166,8 @@ export function getRaycastObstruction(
     obstruction: Obstruction,
 ): RaycastObstruction {
     const properties: ObstructionProperties = {
-        permissiveness: obstruction.metadata[METADATA_KEY_CURVE_PERMISSIVENESS],
+        permissiveness:
+            obstruction.metadata[METADATA_KEY_OBSTRUCTION_PERMISSIVENESS],
     };
     let points: Vector2[];
     if (isObstructionPolygon(obstruction)) {

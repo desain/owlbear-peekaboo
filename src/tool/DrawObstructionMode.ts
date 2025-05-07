@@ -20,8 +20,8 @@ import {
     ID_TOOL_MODE_PARTIAL_OBSTRUCTIONS,
     ID_TOOL_MODE_PEN,
     CONTROL_METADATA as METADATA_CONTROL,
-    METADATA_KEY_CURVE_PERMISSIVENESS,
     METADATA_KEY_IS_PEEKABOO_CONTROL,
+    METADATA_KEY_OBSTRUCTION_PERMISSIVENESS,
     METADATA_KEY_TOOL_PEN_ENABLED,
     STYLE_OBSTRUCTION,
 } from "../constants";
@@ -178,7 +178,7 @@ export class DrawObstructionMode implements ToolMode {
         }
 
         // Build item
-        const metadata = { [METADATA_KEY_CURVE_PERMISSIVENESS]: 0.5 };
+        const metadata = { [METADATA_KEY_OBSTRUCTION_PERMISSIVENESS]: 0.5 };
         let result: Item;
         if (linesActual.length === 2 || linesActual.length === 3) {
             // pressed enter with just a first point and a preview line

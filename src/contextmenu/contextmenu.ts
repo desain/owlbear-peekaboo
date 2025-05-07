@@ -3,7 +3,7 @@ import woodenFence from "../../assets/wooden-fence.svg";
 import {
     ID_CONTEXT_MENU_CONVERT,
     ID_CONTEXT_MENU_REMOVE,
-    METADATA_KEY_CURVE_PERMISSIVENESS,
+    METADATA_KEY_OBSTRUCTION_PERMISSIVENESS,
     STYLE_OBSTRUCTION,
 } from "../constants";
 import {
@@ -47,7 +47,9 @@ function installContextMenu() {
                     items.filter(isObstructionCandidate).forEach((item) => {
                         item.visible = false;
                         item.locked = true;
-                        item.metadata[METADATA_KEY_CURVE_PERMISSIVENESS] = 0.5;
+                        item.metadata[
+                            METADATA_KEY_OBSTRUCTION_PERMISSIVENESS
+                        ] = 0.5;
                         item.style = { ...item.style, ...STYLE_OBSTRUCTION };
                     }),
                 ),
@@ -67,7 +69,9 @@ function installContextMenu() {
             onClick: (context) =>
                 OBR.scene.items.updateItems(context.items, (items) =>
                     items.filter(isObstructionCandidate).forEach((item) => {
-                        delete item.metadata[METADATA_KEY_CURVE_PERMISSIVENESS];
+                        delete item.metadata[
+                            METADATA_KEY_OBSTRUCTION_PERMISSIVENESS
+                        ];
                     }),
                 ),
         }),

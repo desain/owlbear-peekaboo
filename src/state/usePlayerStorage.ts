@@ -1,10 +1,11 @@
-import type { BoundingBox, Image, Item } from "@owlbear-rodeo/sdk";
+import type { BoundingBox, Image, Item, Metadata } from "@owlbear-rodeo/sdk";
 import OBR, { isWall, Math2 } from "@owlbear-rodeo/sdk";
 import { featureCollection } from "@turf/turf";
 import type { FeatureCollection, LineString } from "geojson";
 import { enableMapSet } from "immer";
 import {
     getId,
+    isObject,
     type ExtractNonFunctions,
     type GridParams,
     type GridParsed,
@@ -13,7 +14,11 @@ import {
 import { create } from "zustand";
 import { persist, subscribeWithSelector } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
-import { LOCAL_STORAGE_STORE_NAME } from "../constants";
+import {
+    LOCAL_STORAGE_STORE_NAME,
+    METADATA_KEY_ROOM_CHARACTER_PERMISSIVENESS,
+    METADATA_KEY_ROOM_CORNER_CONFIG,
+} from "../constants";
 import { isObstruction } from "../obstructions";
 import { isToken } from "../Token";
 import type { RaycastObstruction } from "../utils";
@@ -29,63 +34,87 @@ interface LocalStorage {
     readonly toolEnabled: boolean;
     readonly snapOrigin: boolean;
     /**
-     * What label to show based on how many corners are visible.
-     */
-    readonly cornerLabels: Partial<Record<number, string>>;
-    /**
-     * What color to show based on how many corners are visible.
-     */
-    readonly cornerColors: Partial<Record<number, string>>;
-    /**
-     * How much of a vision line characters let through.
-     */
-    readonly characterPermissiveness: number;
-    /**
      * If true, right-click context menu for converting polygons is enabled.
      */
     readonly contextMenuEnabled: boolean;
-    setToolEnabled(this: void, toolEnabled: boolean): void;
-    setSnapOrigin(this: void, snapOrigin: boolean): void;
-    setCornerLabel(this: void, index: number, value: string): void;
-    setCornerColor(this: void, index: number, value: string): void;
-    setCharacterPermissiveness(this: void, value: number): void;
-    setContextMenuEnabled(this: void, contextMenuEnabled: boolean): void;
+    readonly setToolEnabled: (this: void, toolEnabled: boolean) => void;
+    readonly setSnapOrigin: (this: void, snapOrigin: boolean) => void;
+    readonly setContextMenuEnabled: (
+        this: void,
+        contextMenuEnabled: boolean,
+    ) => void;
 }
 function partializeLocalStorage({
     toolEnabled,
     snapOrigin,
-    cornerLabels,
-    cornerColors,
-    characterPermissiveness,
     contextMenuEnabled,
 }: LocalStorage): ExtractNonFunctions<LocalStorage> {
     return {
         toolEnabled,
         snapOrigin,
-        cornerLabels,
-        cornerColors,
-        characterPermissiveness,
         contextMenuEnabled,
     };
 }
 
+interface CornerCountConfig {
+    /**
+     * What label to show based on how many corners are visible.
+     */
+    readonly label: string;
+    /**
+     * What color to show based on how many corners are visible.
+     */
+    readonly color: string;
+}
+function isCornerCountConfig(config: unknown): config is CornerCountConfig {
+    return (
+        isObject(config) &&
+        "label" in config &&
+        typeof config.label === "string" &&
+        "color" in config &&
+        typeof config.color === "string"
+    );
+}
+export type CornerCountConfigs = [
+    c0: CornerCountConfig,
+    c1: CornerCountConfig,
+    c2: CornerCountConfig,
+    c3: CornerCountConfig,
+    c4: CornerCountConfig,
+    c5: CornerCountConfig,
+    c6: CornerCountConfig,
+];
+function isCornerCountConfigs(configs: unknown): configs is CornerCountConfigs {
+    return (
+        Array.isArray(configs) &&
+        configs.length === 7 &&
+        configs.every(isCornerCountConfig)
+    );
+}
+
 interface OwlbearStore {
-    role: Role;
-    sceneReady: boolean;
-    grid: GridParsed;
-    characterBoundingBoxes: [id: string, box: BoundingBox][];
-    walls: {
-        lastModified: number;
-        lastIdSetSize: number;
-        geometry: FeatureCollection<LineString>;
+    readonly role: Role;
+    readonly sceneReady: boolean;
+    readonly grid: GridParsed;
+    readonly characterBoundingBoxes: [id: string, box: BoundingBox][];
+    readonly walls: {
+        readonly lastModified: number;
+        readonly lastIdSetSize: number;
+        readonly geometry: FeatureCollection<LineString>;
     };
-    partialObstructions: RaycastObstruction[];
-    setRole: (this: void, role: Role) => void;
-    setSceneReady: (this: void, sceneReady: boolean) => void;
-    setGrid: (this: void, grid: GridParams) => Promise<void>;
-    getGridCorners: (this: void) => number;
-    updateItems: (this: void, items: Item[]) => void;
-    updateLocalItems: (this: void, items: Item[]) => void;
+    readonly partialObstructions: RaycastObstruction[];
+    readonly cornerConfigs: CornerCountConfigs;
+    /**
+     * How much of a vision line characters let through.
+     */
+    readonly characterPermissiveness: number;
+    readonly setRole: (this: void, role: Role) => void;
+    readonly setSceneReady: (this: void, sceneReady: boolean) => void;
+    readonly setGrid: (this: void, grid: GridParams) => Promise<void>;
+    readonly getGridCorners: (this: void) => number;
+    readonly updateItems: (this: void, items: Item[]) => void;
+    readonly updateLocalItems: (this: void, items: Item[]) => void;
+    readonly handleRoomMetadataChange: (this: void, metadata: Metadata) => void;
 
     /*
     Notes on mirroring metadata:
@@ -123,44 +152,9 @@ export const usePlayerStorage = create<PlayerStorage>()(
                 // local storage
                 toolEnabled: true,
                 snapOrigin: false,
-                cornerLabels: [
-                    "Full Cover",
-                    "3/4 Cover",
-                    "Half Cover",
-                    "No Cover",
-                    "No Cover",
-                ],
-                cornerColors: [
-                    "#c97b7b",
-                    "#d1a17b",
-                    "#d6c97b",
-                    "#a7c97b",
-                    "#7bc97b",
-                    "#64d364",
-                    "#49dd49",
-                ],
-                characterPermissiveness: 0.5,
                 contextMenuEnabled: false,
                 setToolEnabled: (toolEnabled) => set({ toolEnabled }),
                 setSnapOrigin: (snapOrigin) => set({ snapOrigin }),
-                setCornerLabel: (index, value) =>
-                    set((state) => {
-                        state.cornerLabels[index] = value;
-                    }),
-                setCornerColor: (index, value) =>
-                    set((state) => {
-                        state.cornerColors[index] = value;
-                    }),
-                setCharacterPermissiveness: (characterPermissiveness) =>
-                    set((state) => {
-                        state.characterPermissiveness = characterPermissiveness;
-                        for (const partialObstruction of state.partialObstructions) {
-                            if (partialObstruction.properties.characterId) {
-                                partialObstruction.properties.permissiveness =
-                                    characterPermissiveness;
-                            }
-                        }
-                    }),
                 setContextMenuEnabled: (contextMenuEnabled) =>
                     set({ contextMenuEnabled }),
 
@@ -184,6 +178,37 @@ export const usePlayerStorage = create<PlayerStorage>()(
                     geometry: featureCollection([]),
                 },
                 partialObstructions: [],
+                cornerConfigs: [
+                    {
+                        label: "Full Cover",
+                        color: "#c97b7b",
+                    },
+                    {
+                        label: "3/4 Cover",
+                        color: "#d1a17b",
+                    },
+                    {
+                        label: "Half Cover",
+                        color: "#d6c97b",
+                    },
+                    {
+                        label: "No Cover",
+                        color: "#a7c97b",
+                    },
+                    {
+                        label: "No Cover",
+                        color: "#7bc97b",
+                    },
+                    {
+                        label: "No Cover",
+                        color: "#64d364",
+                    },
+                    {
+                        label: "No Cover",
+                        color: "#49dd49",
+                    },
+                ],
+                characterPermissiveness: 0.5,
                 setRole: (role: Role) => set({ role }),
                 setSceneReady: (sceneReady: boolean) => set({ sceneReady }),
                 setGrid: async (grid: GridParams) => {
@@ -260,6 +285,33 @@ export const usePlayerStorage = create<PlayerStorage>()(
                         },
                     });
                 },
+                handleRoomMetadataChange: (metadata: Metadata) =>
+                    set((state) => {
+                        const cornerConfigs =
+                            metadata[METADATA_KEY_ROOM_CORNER_CONFIG];
+                        if (isCornerCountConfigs(cornerConfigs)) {
+                            state.cornerConfigs = cornerConfigs;
+                        }
+
+                        const characterPermissiveness =
+                            metadata[
+                                METADATA_KEY_ROOM_CHARACTER_PERMISSIVENESS
+                            ];
+                        if (
+                            typeof characterPermissiveness === "number" &&
+                            characterPermissiveness >= 0 &&
+                            characterPermissiveness <= 1
+                        ) {
+                            state.characterPermissiveness =
+                                characterPermissiveness;
+                            for (const partialObstruction of state.partialObstructions) {
+                                if (partialObstruction.properties.characterId) {
+                                    partialObstruction.properties.permissiveness =
+                                        characterPermissiveness;
+                                }
+                            }
+                        }
+                    }),
             })),
             {
                 name: LOCAL_STORAGE_STORE_NAME,
