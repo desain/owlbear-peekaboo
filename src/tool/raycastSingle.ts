@@ -7,9 +7,12 @@ import {
 } from "@turf/turf";
 import type { FeatureCollection, Point } from "geojson";
 import { matrixMultiply } from "owlbear-utils";
+import {
+    type RaycastObstruction,
+    isRaycastCircle,
+    vector2ToPosition,
+} from "../state/raycastObstructions";
 import type { PlayerStorage } from "../state/usePlayerStorage";
-import type { RaycastObstruction } from "../utils";
-import { isRaycastCircle, vector2ToPosition } from "../utils";
 
 /**
  * Find intercepts with a circle centered on the origin.

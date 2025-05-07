@@ -21,12 +21,12 @@ import {
 } from "../constants";
 import { isObstruction } from "../obstructions";
 import { isToken } from "../Token";
-import type { RaycastObstruction } from "../utils";
 import {
     boundingBoxToLineString,
     getRaycastObstruction,
     wallToLineString,
-} from "../utils";
+    type RaycastObstruction,
+} from "./raycastObstructions";
 
 enableMapSet();
 
