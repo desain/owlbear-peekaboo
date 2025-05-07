@@ -9,6 +9,7 @@ import {
 } from "@mui/material";
 import { produce } from "immer";
 import { useRehydrate } from "owlbear-utils";
+import { useEffect, useState } from "react";
 import { version } from "../../package.json";
 import { COLOR_BACKUP } from "../constants";
 import {
@@ -24,8 +25,6 @@ export function Settings() {
     const setSnapOrigin = usePlayerStorage((store) => store.setSnapOrigin);
     const numGridCorners = usePlayerStorage((store) => store.getGridCorners());
 
-    const cornerConfigs = usePlayerStorage((store) => store.cornerConfigs);
-
     const characterPermissiveness = usePlayerStorage(
         (store) => store.characterPermissiveness,
     );
@@ -38,6 +37,22 @@ export function Settings() {
     );
 
     const role = usePlayerStorage((store) => store.role);
+
+    const cornerConfigs = usePlayerStorage((store) => store.cornerConfigs);
+    // debouncing
+    const [localCornerConfigs, setLocalCornerConfigs] = useState(cornerConfigs);
+    // Keep local state in sync if cornerConfigs changes externally
+    useEffect(() => {
+        setLocalCornerConfigs(cornerConfigs);
+    }, [cornerConfigs]);
+    useEffect(() => {
+        const applyChange = setTimeout(async () => {
+            if (localCornerConfigs !== cornerConfigs) {
+                await setCornerCountConfigs(localCornerConfigs);
+            }
+        }, 1000);
+        return () => clearTimeout(applyChange);
+    }, [localCornerConfigs, cornerConfigs]);
 
     return (
         <Box sx={{ p: 2, minWidth: 300 }}>
@@ -93,8 +108,8 @@ export function Settings() {
                             label="Enable context menu"
                         />
                         <FormHelperText>
-                            If enabled, right-clicking a polygon or line will
-                            show a menu to convert it into partial cover.
+                            If enabled, right-clicking a line or shape will show
+                            a menu to convert it into partial cover.
                         </FormHelperText>
                     </FormGroup>
                     <FormGroup>
@@ -116,9 +131,9 @@ export function Settings() {
                                     label={`${n} visible corner${
                                         n !== 1 ? "s" : ""
                                     }`}
-                                    value={cornerConfigs[n].label ?? ""}
+                                    value={localCornerConfigs[n].label ?? ""}
                                     onChange={(e) =>
-                                        setCornerCountConfigs(
+                                        setLocalCornerConfigs(
                                             produce(
                                                 cornerConfigs,
                                                 (cornerConfigs) => {
@@ -135,10 +150,11 @@ export function Settings() {
                                 <input
                                     type="color"
                                     value={
-                                        cornerConfigs[n].color ?? COLOR_BACKUP
+                                        localCornerConfigs[n].color ??
+                                        COLOR_BACKUP
                                     }
                                     onChange={(e) =>
-                                        setCornerCountConfigs(
+                                        setLocalCornerConfigs(
                                             produce(
                                                 cornerConfigs,
                                                 (cornerConfigs) => {

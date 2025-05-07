@@ -157,7 +157,7 @@ function createIconForToken(token: Token): Image {
  */
 export class PartialCoverMode implements ToolMode {
     readonly id = ID_TOOL_MODE_PARTIAL_COVER;
-    readonly shortcut = "O";
+    readonly shortcut = "C";
     readonly icons = [
         {
             icon: woodenFence,
