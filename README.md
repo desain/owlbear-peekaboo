@@ -11,11 +11,46 @@ Owlbear Rodeo extension for checking token visibility.
 
 ## How to use
 
-TODO
+### Measuring Visibility
+
+This extension creates a new tool called 'Check Visibility'.
+
+With that tool selected, the default mode lets you check which places are visible from other places. Click on a token or square and drag across the map. Vision lines will update from the source to the corners of the target square.
+
+-   White lines are unobstructed
+-   Yellow lines are partially obstructed (see partial obstruction, below)
+-   Red lines are fully obstructed
+
+When switching away from the tool and then back to it, the tool will recall your last measurement.
+
+If you start or end your measurement on a token's space, the tool will move the start or end of your measurement with the token.
+
+You can switch between private and public measuring modes - the private mode is only visible to you, and the public mode can be seen by everyone.
+
+### Partial Obstruction
+
+For the GM, the tool also has a mode for creating partial obstructions. With this mode active, you can click on lines, polygons, and shapes in the map to turn them into partial obstructions (or click again to unmark them). You can also click on the map to draw a partial obstruction polygon yourself.
+
+Lines that pass through partial obstructions count as half a line for determining the number of unobstructed vision lines that reach a target. For example, if 4 vision lines to a target pass through a partial obstruction, the target will have the same cover as if 2 lines were unobstructed and 2 were obstructed.
+
+### Removing measurements
+
+Clicking the broom icon in the tool's action bar will remove all active measurements.
+
+### Settings
+
+Clicking the cog icon in the tool's action bar will open its settings.
+
+Settings:
+
+-   **Snap Origins**: Whether the origin point of measurements snaps to the grid.
+-   **Enable Context Menu** (GM only): Turns on a context menu for lines, shapes, and polygons that lets you turn them into partial obstructions. This menu is only visible to the GM.
+-   **Characters are partial obstructions** (GM only): Sets a room-global setting which causes all tokens to be treated as partial obstructions. Useful for modeling how half cover works in games like D&D.
+-   **Labels and colors** (GM only). Sets room-global settings for how visibility will display.
 
 ## Support
 
-If you need support for this extension you can message me in the [Owlbear Rodeo Discord](https://discord.com/invite/u5RYMkV98s) @Nick or open an issue on [GitHub](https://github.com/desain/owlbear-template/issues).
+If you need support for this extension you can message me in the [Owlbear Rodeo Discord](https://discord.com/invite/u5RYMkV98s) @Nick or open an issue on [GitHub](https://github.com/desain/owlbear-peekaboo/issues).
 
 ## Development
 
@@ -49,8 +84,10 @@ To make a production build run:
 -   Turf separate imports? https://turfjs.org/docs/api/featureCollection, https://turfjs.org/docs/api/lineIntersect
 -   Combine walls? https://turfjs.org/docs/api/combine
 -   Figure out how to set different types of partial cover (3/4, etc)
--   squares, hexagons, triangles, circles as obstructions
 -   Paths as obstructions - context menu turns them into line strings
+-   Cornercount names, colors, characters block is a room metadata setting only changable by GM
+-   Context menu is only available to GM
+-   Put measurements on ruler layer, label on control layer. Tool only shows up if you have ruler create + update perms
 
 ## License
 
