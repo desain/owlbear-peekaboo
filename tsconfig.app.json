@@ -13,6 +13,8 @@
         "moduleDetection": "force",
         "noEmit": true,
         "jsx": "react-jsx",
+        "esModuleInterop": true,
+        "verbatimModuleSyntax": true,
         /* Linting */
         "strict": true,
         "noUnusedLocals": true,

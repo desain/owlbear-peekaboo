@@ -10,6 +10,8 @@
         "isolatedModules": true,
         "moduleDetection": "force",
         "noEmit": true,
+        "esModuleInterop": true,
+        "verbatimModuleSyntax": true,
         /* Linting */
         "strict": true,
         "noUnusedLocals": true,
