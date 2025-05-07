@@ -1,7 +1,10 @@
 import type { Curve, Item, KeyFilter, Line, Shape } from "@owlbear-rodeo/sdk";
 import { isCurve, isLine, isShape } from "@owlbear-rodeo/sdk";
 import type { HasParameterizedMetadata } from "owlbear-utils";
-import { METADATA_KEY_OBSTRUCTION_PERMISSIVENESS } from "./constants";
+import {
+    METADATA_KEY_IS_PEEKABOO_CONTROL,
+    METADATA_KEY_OBSTRUCTION_PERMISSIVENESS,
+} from "./constants";
 
 // General obstructions
 const SMOKE_AND_SPECTRE_IS_VISION_LINE = "com.battle-system.smoke/isVisionLine";
@@ -10,6 +13,10 @@ export type ObstructionCandidate = (Curve | Shape | Line) &
     HasParameterizedMetadata<
         typeof METADATA_KEY_OBSTRUCTION_PERMISSIVENESS,
         number | undefined
+    > &
+    HasParameterizedMetadata<
+        typeof METADATA_KEY_IS_PEEKABOO_CONTROL,
+        false | undefined
     > &
     HasParameterizedMetadata<
         typeof SMOKE_AND_SPECTRE_IS_VISION_LINE, // Don't allow Smoke and Spectre full obstructions to also be partial obstructions
@@ -24,11 +31,18 @@ export function isObstructionCandidate(
         (!(METADATA_KEY_OBSTRUCTION_PERMISSIVENESS in item.metadata) ||
             typeof item.metadata[METADATA_KEY_OBSTRUCTION_PERMISSIVENESS] ===
                 "number") &&
+        (!(METADATA_KEY_IS_PEEKABOO_CONTROL in item.metadata) ||
+            item.metadata[METADATA_KEY_IS_PEEKABOO_CONTROL] === false) &&
         (!(SMOKE_AND_SPECTRE_IS_VISION_LINE in item.metadata) ||
             item.metadata[SMOKE_AND_SPECTRE_IS_VISION_LINE] === false)
     );
 }
 const KEY_FILTER_OBSTRUCTION_CANDIDATE: KeyFilter[] = [
+    {
+        key: ["metadata", METADATA_KEY_IS_PEEKABOO_CONTROL],
+        operator: "!=",
+        value: true,
+    },
     {
         key: ["metadata", SMOKE_AND_SPECTRE_IS_VISION_LINE],
         operator: "!=",

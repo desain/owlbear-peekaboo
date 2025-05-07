@@ -87,6 +87,8 @@ To make a production build run:
 -   Figure out how to set different types of partial cover (3/4, etc)
 -   Paths as obstructions - context menu turns them into line strings
 -   Put measurements on ruler layer, label on control layer. Tool only shows up if you have ruler create + update perms
+-   Debounce room metadata update
+-   Obstruction to cover
 
 ## License
 
