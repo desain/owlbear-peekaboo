@@ -13,9 +13,9 @@ import { isObject } from "owlbear-utils";
 import { METADATA_KEY_PERMISSIVENESS } from "../constants";
 import { type Cover, isCoverPolygon } from "../coverTypes";
 import {
-    getCurveWorldPoints,
     getLineWorldPoints,
     getShapeWorldPoints,
+    getWorldPoints,
     isNonCircleShape,
 } from "../utils";
 
@@ -61,7 +61,7 @@ export function vector2ToPosition(vector: { x: number; y: number }): Position {
 }
 
 export function wallToLineString(wall: Readonly<Wall>): Feature<LineString> {
-    const coords: Position[] = wall.points.map(vector2ToPosition);
+    const coords: Position[] = getWorldPoints(wall).map(vector2ToPosition);
     if (coords.length < 2) {
         throw new Error("Invalid wall: " + JSON.stringify(coords));
     }
@@ -89,7 +89,7 @@ export function getRaycastCover(cover: Cover): RaycastCover {
     };
     let points: Vector2[];
     if (isCoverPolygon(cover)) {
-        points = getCurveWorldPoints(cover);
+        points = getWorldPoints(cover);
         // OBR polygons auto-close, so add a final line back
         // to the starting point.
         points.push(points[0]);

@@ -39,9 +39,9 @@ import { usePlayerStorage } from "../state/usePlayerStorage";
 import type { Token } from "../Token";
 import { isToken } from "../Token";
 import {
-    getCurveWorldPoints,
     getLineWorldPoints,
     getShapeWorldPoints,
+    getWorldPoints,
     isNonCircleShape,
 } from "../utils";
 
@@ -72,7 +72,7 @@ function getIconSource(item: CoverCandidate, hoverState?: HoverState): string {
 
 function getIconPosition(item: CoverCandidate): Vector2 {
     if (isCurve(item)) {
-        return Math2.centroid(getCurveWorldPoints(item));
+        return Math2.centroid(getWorldPoints(item));
     } else if (isLine(item)) {
         return Math2.centroid(getLineWorldPoints(item));
     } else if (isShape(item)) {
@@ -203,7 +203,8 @@ export class PartialCoverMode implements ToolMode {
         const handleNewItems = (items: Item[]) =>
             this.#updateIcons(
                 items,
-                usePlayerStorage.getState().roomMetadata.characterPermissiveness,
+                usePlayerStorage.getState().roomMetadata
+                    .characterPermissiveness,
             );
         // Subscribe to item and config updates
         const unsubscribeItems = OBR.scene.items.onChange(handleNewItems);
