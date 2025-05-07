@@ -1,6 +1,7 @@
 import type {
     ToolContext,
     ToolEvent,
+    ToolIcon,
     ToolMode,
     Vector2,
 } from "@owlbear-rodeo/sdk";
@@ -79,7 +80,7 @@ export class VisibilityMode implements ToolMode {
         },
         { cursor: "crosshair" },
     ];
-    readonly icons = [
+    readonly icons: ToolIcon[] = [
         {
             icon: eyeTarget,
             label: "Check Visibility",

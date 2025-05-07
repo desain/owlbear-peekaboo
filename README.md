@@ -86,7 +86,6 @@ To make a production build run:
 -   Combine walls? https://turfjs.org/docs/api/combine
 -   Figure out how to set different types of partial cover (3/4, etc)
 -   Paths as cover - context menu turns them into line strings
--   Put measurements on ruler layer, label on control layer. Tool only shows up if you have ruler create + update perms
 -   Debounce room metadata update
 -   Cleanup shouldn't destroy active measurements
 

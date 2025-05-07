@@ -88,7 +88,7 @@ export function makeInteractionItems(start: Pin, end: Pin): ControlItems {
         .closed(true)
         .disableHit(true)
         .locked(true)
-        .layer("CONTROL")
+        .layer("POINTER")
         .metadata(CONTROL_METADATA)
         .build();
 
@@ -100,7 +100,7 @@ export function makeInteractionItems(start: Pin, end: Pin): ControlItems {
             .strokeDash([1, 30])
             .disableHit(true)
             .locked(true)
-            .layer("CONTROL")
+            .layer("RULER")
             .metadata(CONTROL_METADATA)
             .build(),
     );
