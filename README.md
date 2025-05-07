@@ -86,7 +86,7 @@ To make a production build run:
 -   Combine walls? https://turfjs.org/docs/api/combine
 -   Figure out how to set different types of partial cover (3/4, etc)
 -   Paths as cover - context menu turns them into line strings
--   Cleanup shouldn't destroy active measurements
+-   Cleanup shouldn't destroy active measurements. only destroys others public measurements if called by gm. resets tool start and end
 -   take color input from utils once utils has it
 
 ## License
