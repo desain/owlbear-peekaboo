@@ -125,16 +125,21 @@ export async function deleteIcons(
 
 export function stopDisplayingPreviousDrag(
     state: DisplayPreviousDragState,
-): RememberPreviousDragState {
+    remember: boolean,
+): RememberPreviousDragState | null {
     const toDelete: string[] = state.displayItems.map(getId);
     void state.itemApi.deleteItems(toDelete);
     void deleteIcons(state);
 
-    return {
-        start: state.start,
-        end: state.end,
-        wasPrivate: state.itemApi === OBR.scene.local, // TODO better tracking?
-    };
+    if (remember) {
+        return {
+            start: state.start,
+            end: state.end,
+            wasPrivate: state.itemApi === OBR.scene.local, // TODO better tracking?
+        };
+    } else {
+        return null;
+    }
 }
 
 export function stopDragging(state: DraggingState, keep: boolean): ModeState {

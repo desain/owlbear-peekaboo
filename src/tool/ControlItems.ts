@@ -3,6 +3,7 @@ import type {
     Image,
     ImageContent,
     ImageGrid,
+    Item,
     Label,
     Line,
     Vector2,
@@ -14,13 +15,20 @@ import {
     buildLine,
     Math2,
 } from "@owlbear-rodeo/sdk";
+import type { HasParameterizedMetadata } from "owlbear-utils";
 import eyeTarget from "../../assets/eye-target.svg";
-import { CONTROL_METADATA } from "../constants";
+import { CONTROL_METADATA, METADATA_KEY_IS_CONTROL } from "../constants";
 import { usePlayerStorage } from "../state/usePlayerStorage";
 import { getGridCorners } from "./gridUtils";
 import type { Pin } from "./Pin";
 import type { RaycastResult } from "./raycast";
 import { raycast } from "./raycast";
+
+export type Control = Item &
+    HasParameterizedMetadata<typeof METADATA_KEY_IS_CONTROL, true>;
+export function isControl(item: Item): item is Control {
+    return item.metadata[METADATA_KEY_IS_CONTROL] === true;
+}
 
 export type ControlItems = [
     /**
