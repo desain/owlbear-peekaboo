@@ -144,7 +144,11 @@ export function fixControlItems(
     // Fix lines
     lines.forEach((line, i) => {
         line.startPosition = startPosition;
-        line.endPosition = lineResults[i].endPosition;
-        line.style.strokeColor = lineResults[i].color;
+        const lineResult = lineResults[i];
+        if (!lineResult) {
+            return;
+        }
+        line.endPosition = lineResult.endPosition;
+        line.style.strokeColor = lineResult.color;
     });
 }

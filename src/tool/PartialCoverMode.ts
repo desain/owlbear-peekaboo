@@ -291,7 +291,8 @@ export class PartialCoverMode implements ToolMode {
                       toUpdate.map(([iconId]) => iconId),
                       (icons) =>
                           icons.forEach((icon, i) => {
-                              icon.image.url = toUpdate[i][1];
+                              icon.image.url =
+                                  toUpdate[i]?.[1] ?? icon.image.url;
                           }),
                   )
                 : null,
@@ -317,7 +318,7 @@ export class PartialCoverMode implements ToolMode {
                     const [cover] = await OBR.scene.items.getItems<Curve>([
                         oldHoveredId,
                     ]);
-                    if (!isCoverCandidate(cover)) {
+                    if (!cover || !isCoverCandidate(cover)) {
                         return;
                     }
                     const newUrl = getIconSource(cover);
@@ -359,13 +360,17 @@ export class PartialCoverMode implements ToolMode {
 
         if (target && isCoverCandidate(target)) {
             if (target.metadata[METADATA_KEY_PERMISSIVENESS]) {
-                void OBR.scene.items.updateItems([target], ([target]) => {
-                    delete target.metadata[METADATA_KEY_PERMISSIVENESS];
-                });
+                void OBR.scene.items.updateItems([target], (targets) =>
+                    targets.forEach((target) => {
+                        delete target.metadata[METADATA_KEY_PERMISSIVENESS];
+                    }),
+                );
             } else {
-                void OBR.scene.items.updateItems([target], ([target]) => {
-                    target.metadata[METADATA_KEY_PERMISSIVENESS] = 0.5;
-                });
+                void OBR.scene.items.updateItems([target], (targets) =>
+                    targets.forEach((target) => {
+                        target.metadata[METADATA_KEY_PERMISSIVENESS] = 0.5;
+                    }),
+                );
             }
         } else {
             // start drawing cover

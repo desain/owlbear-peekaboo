@@ -109,6 +109,9 @@ export function raycastSingle(
         const intersections = lineIntersect(ray, wall.geometry);
         for (const feat of intersections.features) {
             const [x, y] = feat.geometry.coordinates;
+            if (x === undefined || y === undefined) {
+                continue;
+            }
             const pt = { x, y };
             const dx = start.x - pt.x;
             const dy = start.y - pt.y;
