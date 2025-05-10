@@ -1,6 +1,7 @@
 import type {
     Item,
     KeyEvent,
+    Label,
     Line,
     ToolContext,
     ToolEvent,
@@ -80,7 +81,7 @@ export class DrawCoverMode implements ToolMode {
     ];
 
     #inputPosition?: Vector2;
-    #finishLabelId?: string;
+    #finishLabel?: Pick<Label, "id" | "position">;
     /**
      * IDs of local line items. If nonempty, has at least two elements.
      * The last two are always the line going into and out of the mouse position.
@@ -112,7 +113,7 @@ export class DrawCoverMode implements ToolMode {
             .pointerWidth(10)
             .metadata(METADATA_CONTROL)
             .build();
-        this.#finishLabelId = label.id;
+        this.#finishLabel = { id: label.id, position: label.position };
 
         // Place the preview lines
         const lineToPointer = makePreviewLine(position, position);
@@ -123,7 +124,12 @@ export class DrawCoverMode implements ToolMode {
     };
 
     readonly onToolMove = (_context: ToolContext, event: ToolEvent) => {
-        void this.#updatePosition(event.pointerPosition);
+        if (this.#finishLabel && event.target?.id === this.#finishLabel?.id) {
+            // hovering over the finish label, so show the line back to the origin
+            return this.#updatePosition(this.#finishLabel.position);
+        } else {
+            return this.#updatePosition(event.pointerPosition);
+        }
     };
 
     readonly #doSnap = async (position: Vector2): Promise<Vector2> => {
@@ -161,16 +167,37 @@ export class DrawCoverMode implements ToolMode {
         return snappedPosition;
     };
 
+    /**
+     * Called when we click without moving the mouse between mouse button down and up.
+     * Mutally exclusive with onToolDragEnd.
+     */
     readonly onToolClick = async (_context: ToolContext, event: ToolEvent) => {
+        // console.log("onToolClick");
         const position = await this.#updatePosition(event.pointerPosition);
 
-        if (event.target && event.target.id === this.#finishLabelId) {
+        if (event.target && event.target.id === this.#finishLabel?.id) {
             void this.#doFinish();
         } else {
-            const newLineToPointer = makePreviewLine(position, position);
-            this.#lineIds.splice(-1, 0, newLineToPointer.id);
-            await OBR.scene.local.addItems([newLineToPointer]);
+            await this.#doAddPoint(position);
         }
+    };
+
+    /**
+     * Called when we finish clicking and dragging. Mutually exclusive with onToolClick.
+     */
+    readonly onToolDragEnd = async (
+        _context: ToolContext,
+        event: ToolEvent,
+    ) => {
+        // console.log("onToolDragEnd");
+        const position = await this.#updatePosition(event.pointerPosition);
+        await this.#doAddPoint(position);
+    };
+
+    readonly #doAddPoint = async (position: Vector2) => {
+        const newLineToPointer = makePreviewLine(position, position);
+        this.#lineIds.splice(-1, 0, newLineToPointer.id);
+        await OBR.scene.local.addItems([newLineToPointer]);
     };
 
     readonly #doFinish = async () => {
@@ -219,7 +246,7 @@ export class DrawCoverMode implements ToolMode {
                 .visible(false)
                 .metadata(metadata)
                 .locked(true)
-                .layer("DRAWING")
+                .layer("MAP")
                 .build();
         }
 
@@ -232,9 +259,9 @@ export class DrawCoverMode implements ToolMode {
     readonly #deleteControls = async () => {
         // Clean up local items
         const toDelete = [];
-        if (this.#finishLabelId) {
-            toDelete.push(this.#finishLabelId);
-            this.#finishLabelId = undefined;
+        if (this.#finishLabel) {
+            toDelete.push(this.#finishLabel.id);
+            this.#finishLabel = undefined;
         }
         toDelete.push(...this.#lineIds);
         this.#lineIds = [];
@@ -282,27 +309,4 @@ export class DrawCoverMode implements ToolMode {
     readonly onDeactivate = () => {
         this.#doLeaveTool();
     };
-
-    // onToolDoubleClick?:
-    //     | ((
-    //           context: ToolContext,
-    //           event: ToolEvent,
-    //       ) => boolean | undefined | void | Promise<boolean | undefined | void>)
-    //     | undefined;
-    // onToolDown?: ((context: ToolContext, event: ToolEvent) => void) | undefined;
-    // readonly onToolUp = (context: ToolContext, event: ToolEvent) => {
-    //     console.log("up");
-    // };
-    // onToolDragStart?:
-    //     | ((context: ToolContext, event: ToolEvent) => void)
-    //     | undefined;
-    // onToolDragMove?:
-    //     | ((context: ToolContext, event: ToolEvent) => void)
-    //     | undefined;
-    // onToolDragEnd?:
-    //     | ((context: ToolContext, event: ToolEvent) => void)
-    //     | undefined;
-    // onToolDragCancel?:
-    //     | ((context: ToolContext, event: ToolEvent) => void)
-    //     | undefined;
 }
