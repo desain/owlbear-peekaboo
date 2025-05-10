@@ -1,3 +1,0 @@
-This is an extension for the Owlbear Rodeo VTT. It uses Vite, React, and MUI components. It uses Zustand with the persist middleware for storage.
-
-The purpose of the extension is to create a custom tool that lets players check the visibility of some squares from other squares on the map.
