@@ -44,6 +44,8 @@ When you right-click on a partial cover object (or select multiple and right-cli
 
 Lines that pass through partial cover are multiplied by the cover's permeability for the purpose of counting the number of unobstructed vision lines that reach a target. For example, if 4 vision lines to a target pass through a 50% permeable partial cover, the target will have the same cover as if 2 lines were fully unobstructed and 2 were obstructed.
 
+If a line passes through multiple partial cover objects with different permeabilities, only the least permeable instance of partial cover will apply.
+
 ### Removing measurements
 
 Clicking the broom icon in the tool's action bar will remove all active measurements.
@@ -93,7 +95,6 @@ To make a production build run:
 ## To do
 
 -   two sets of lines, white until the stop point, red/yellow after
--   Combine walls? https://turfjs.org/docs/api/combine
 -   Paths as cover - context menu turns them into line strings, like [dynamic fog](https://github.com/owlbear-rodeo/dynamic-fog/blob/main/src/background/util/PathHelpers.ts)
 -   Cleanup shouldn't destroy active measurements. only destroys others public measurements if called by gm. resets tool start and end
 -   take color input from utils once utils has it
