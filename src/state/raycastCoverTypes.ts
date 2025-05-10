@@ -92,7 +92,9 @@ export function getRaycastCover(cover: Cover): RaycastCover {
         points = getWorldPoints(cover);
         // OBR polygons auto-close, so add a final line back
         // to the starting point.
-        points.push(points[0]);
+        if (points[0]) {
+            points.push(points[0]);
+        }
     } else if (isLine(cover)) {
         points = getLineWorldPoints(cover);
     } else if (isShape(cover)) {
@@ -100,7 +102,9 @@ export function getRaycastCover(cover: Cover): RaycastCover {
             points = getShapeWorldPoints(cover);
             // OBR polygons auto-close, so add a final line back
             // to the starting point.
-            points.push(points[0]);
+            if (points[0]) {
+                points.push(points[0]);
+            }
         } else {
             const transform = MathM.fromItem(cover);
             return {

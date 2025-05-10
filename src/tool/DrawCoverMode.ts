@@ -134,23 +134,31 @@ export class DrawCoverMode implements ToolMode {
     };
 
     readonly #updatePosition = async (position: Vector2): Promise<Vector2> => {
-        if (this.#lineIds.length < 2) {
-            return position;
-        }
-        position = await this.#doSnap(position);
         const lineToPointer = this.#lineIds[this.#lineIds.length - 2];
         const loopbackLine = this.#lineIds[this.#lineIds.length - 1];
+        if (!lineToPointer || !loopbackLine) {
+            // not drawing
+            return position;
+        }
+
+        const snappedPosition = await this.#doSnap(position);
+
         await OBR.scene.local.updateItems<Line>(
             [lineToPointer, loopbackLine],
             ([lineToPointer, loopbackLine]) => {
-                if (!isLine(lineToPointer) || !isLine(loopbackLine)) {
+                if (
+                    !lineToPointer ||
+                    !loopbackLine ||
+                    !isLine(lineToPointer) ||
+                    !isLine(loopbackLine)
+                ) {
                     return;
                 }
-                lineToPointer.endPosition = position;
-                loopbackLine.startPosition = position;
+                lineToPointer.endPosition = snappedPosition;
+                loopbackLine.startPosition = snappedPosition;
             },
         );
-        return position;
+        return snappedPosition;
     };
 
     readonly onToolClick = async (_context: ToolContext, event: ToolEvent) => {
@@ -174,13 +182,13 @@ export class DrawCoverMode implements ToolMode {
         // Take the results
         const linesActual = await OBR.scene.local.getItems<Line>(this.#lineIds);
         if (linesActual.length !== this.#lineIds.length) {
-            throw new Error("Wrong number of lines");
+            throw Error("Wrong number of lines");
         }
 
         // Build item
         const metadata = { [METADATA_KEY_PERMISSIVENESS]: 0.5 };
         let result: Item;
-        if (linesActual.length === 2 || linesActual.length === 3) {
+        if (linesActual[0] && linesActual.length <= 3) {
             // pressed enter with just a first point and a preview line
             // or clicked once then either pressed enter or clicked finish
             result = buildLine()
@@ -211,7 +219,7 @@ export class DrawCoverMode implements ToolMode {
                 .visible(false)
                 .metadata(metadata)
                 .locked(true)
-                .layer('DRAWING')
+                .layer("DRAWING")
                 .build();
         }
 

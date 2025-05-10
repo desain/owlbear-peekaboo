@@ -138,16 +138,20 @@ export function Settings() {
                                     }`}
                                     value={
                                         localRoomMetadata.cornerConfigs[n]
-                                            .label ?? ""
+                                            ?.label ?? ""
                                     }
                                     onChange={(e) =>
                                         setLocalRoomMetadata(
                                             produce(
                                                 localRoomMetadata,
                                                 (roomMetadata) => {
-                                                    roomMetadata.cornerConfigs[
-                                                        n
-                                                    ].label = e.target.value;
+                                                    const cornerConfig =
+                                                        roomMetadata
+                                                            .cornerConfigs[n];
+                                                    if (cornerConfig) {
+                                                        cornerConfig.label =
+                                                            e.target.value;
+                                                    }
                                                 },
                                             ),
                                         )
@@ -160,16 +164,20 @@ export function Settings() {
                                     type="color"
                                     value={
                                         localRoomMetadata.cornerConfigs[n]
-                                            .color ?? COLOR_BACKUP
+                                            ?.color ?? COLOR_BACKUP
                                     }
                                     onChange={(e) =>
                                         setLocalRoomMetadata(
                                             produce(
                                                 localRoomMetadata,
                                                 (roomMetadata) => {
-                                                    roomMetadata.cornerConfigs[
-                                                        n
-                                                    ].color = e.target.value;
+                                                    const cornerConfig =
+                                                        roomMetadata
+                                                            .cornerConfigs[n];
+                                                    if (cornerConfig) {
+                                                        cornerConfig.color =
+                                                            e.target.value;
+                                                    }
                                                 },
                                             ),
                                         )
