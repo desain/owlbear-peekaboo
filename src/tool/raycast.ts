@@ -1,5 +1,5 @@
 import type { Vector2 } from "@owlbear-rodeo/sdk";
-import { COLOR_BACKUP } from "../constants";
+import { COLOR_BACKUP, SOLIDITY_FULL_COVER } from "../constants";
 import { usePlayerStorage } from "../state/usePlayerStorage";
 import { getPartialCoverColor } from "../utils";
 import { getGridCorners } from "./gridUtils";
@@ -56,7 +56,7 @@ export function raycast(
         } else {
             return {
                 endPosition: result,
-                color: getPartialCoverColor(0),
+                color: getPartialCoverColor(SOLIDITY_FULL_COVER),
             };
         }
     });

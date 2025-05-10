@@ -1,6 +1,5 @@
 import type { Matrix } from "@owlbear-rodeo/sdk";
 import {
-    type BoundingBox,
     type Vector2,
     type Wall,
     isLine,
@@ -88,20 +87,20 @@ export function getWallPositions(wall: Readonly<Wall>): Position[] {
     return getWorldPoints(wall).map(vector2ToPosition);
 }
 
-export function boundingBoxToLineString(
-    box: Readonly<BoundingBox>,
-    properties: CoverProperties,
-): RaycastCover {
-    const { min, max } = box;
-    const corners: Position[] = [
-        [min.x, min.y],
-        [max.x, min.y],
-        [max.x, max.y],
-        [min.x, max.y],
-        [min.x, min.y],
-    ];
-    return lineString(corners, properties);
-}
+// export function boundingBoxToLineString(
+//     box: Readonly<BoundingBox>,
+//     properties: CoverProperties,
+// ): RaycastCover {
+//     const { min, max } = box;
+//     const corners: Position[] = [
+//         [min.x, min.y], // top left
+//         [min.x, max.y], // bottom left
+//         [max.x, max.y], // bottom right
+//         [max.x, min.y], // top right
+//         [min.x, min.y], // top left
+//     ];
+//     return lineString(corners, properties);
+// }
 
 export function getRaycastCover(cover: Cover): RaycastCover {
     const properties: CoverProperties = {
@@ -112,19 +111,15 @@ export function getRaycastCover(cover: Cover): RaycastCover {
         points = getWorldPoints(cover);
         // OBR polygons auto-close, so add a final line back
         // to the starting point.
-        if (points[0]) {
-            points.push(points[0]);
-        }
+        points.push(points[0]!);
     } else if (isLine(cover)) {
         points = getLineWorldPoints(cover);
     } else if (isShape(cover)) {
         if (isNonCircleShape(cover)) {
             points = getShapeWorldPoints(cover);
-            // OBR polygons auto-close, so add a final line back
+            // World points, so add a final line back
             // to the starting point.
-            if (points[0]) {
-                points.push(points[0]);
-            }
+            points.push(points[0]!);
         } else {
             const transform = MathM.multiply(
                 MathM.fromItem(cover),

@@ -1,10 +1,9 @@
-import type { BoundingBox, Image, Item, Metadata } from "@owlbear-rodeo/sdk";
+import type { BoundingBox, Item, Metadata } from "@owlbear-rodeo/sdk";
 import OBR, { isWall, Math2 } from "@owlbear-rodeo/sdk";
-import { multiLineString } from "@turf/helpers";
+import { lineString, multiLineString } from "@turf/helpers";
 import type { Feature, MultiLineString } from "geojson";
 import { enableMapSet } from "immer";
 import {
-    getId,
     type ExtractNonFunctions,
     type GridParams,
     type GridParsed,
@@ -20,10 +19,11 @@ import {
 } from "../constants";
 import { isCover } from "../coverTypes";
 import { isToken } from "../Token";
+import { getImageWorldPoints } from "../utils";
 import {
-    boundingBoxToLineString,
     getRaycastCover,
     getWallPositions,
+    vector2ToPosition,
     type RaycastCover,
 } from "./raycastCoverTypes";
 import { isRoomMetadata, type RoomMetadata } from "./roomMetadata";
@@ -75,7 +75,7 @@ interface OwlbearStore {
     readonly characterBoundingBoxes: [id: string, box: BoundingBox][];
     readonly walls: {
         readonly lastModified: number;
-        readonly lastIdSetSize: number;
+        readonly lastWallCount: number;
         readonly geometry: Feature<MultiLineString>;
     };
     readonly partialCover: RaycastCover[];
@@ -153,7 +153,7 @@ export const usePlayerStorage = create<PlayerStorage>()(
                 characterBoundingBoxes: [],
                 walls: {
                     lastModified: 0,
-                    lastIdSetSize: 0,
+                    lastWallCount: 0,
                     geometry: multiLineString([]),
                 },
                 partialCover: [],
@@ -214,34 +214,34 @@ export const usePlayerStorage = create<PlayerStorage>()(
                 },
                 updateItems: (items) =>
                     set((state) => {
-                        const characterBoundingBoxes = items
-                            .filter(isToken)
-                            .map(
-                                (item) =>
-                                    [
-                                        item.id,
-                                        getBoundingBox(item, state.grid),
-                                    ] as const,
-                            );
-                        const tokenPartialCover = characterBoundingBoxes.map(
-                            ([id, box]) =>
-                                boundingBoxToLineString(box, {
-                                    characterId: id,
-                                    solidity:
-                                        state.roomMetadata.characterSolidity,
-                                }),
-                        );
-                        const partialCover = items
-                            .filter(isCover)
-                            .map(getRaycastCover);
+                        state.characterBoundingBoxes = [];
+                        state.partialCover = [];
 
-                        return {
-                            characterBoundingBoxes,
-                            partialCover: [
-                                ...tokenPartialCover,
-                                ...partialCover,
-                            ],
-                        };
+                        for (const item of items) {
+                            if (isToken(item)) {
+                                const worldPoints = getImageWorldPoints(
+                                    item,
+                                    state.grid,
+                                );
+                                state.characterBoundingBoxes.push([
+                                    item.id,
+                                    Math2.boundingBox(worldPoints),
+                                ]);
+                                const worldPositions =
+                                    worldPoints.map(vector2ToPosition);
+                                worldPositions.push(worldPositions[0]!);
+                                state.partialCover.push(
+                                    lineString(worldPositions, {
+                                        characterId: item.id,
+                                        solidity:
+                                            state.roomMetadata
+                                                .characterSolidity,
+                                    }),
+                                );
+                            } else if (isCover(item)) {
+                                state.partialCover.push(getRaycastCover(item));
+                            }
+                        }
                     }),
                 updateLocalItems: (items) => {
                     const oldWalls = get().walls;
@@ -251,10 +251,9 @@ export const usePlayerStorage = create<PlayerStorage>()(
                             Date.parse(wall.lastModified),
                         ),
                     );
-                    const idSet = new Set<string>(wallItems.map(getId));
                     if (
                         lastModified <= oldWalls.lastModified &&
-                        idSet.size === oldWalls.lastIdSetSize
+                        wallItems.length === oldWalls.lastWallCount
                     ) {
                         return;
                     }
@@ -262,7 +261,7 @@ export const usePlayerStorage = create<PlayerStorage>()(
                     return set({
                         walls: {
                             lastModified,
-                            lastIdSetSize: idSet.size,
+                            lastWallCount: wallItems.length,
                             geometry: multiLineString(lineStrings),
                         },
                     });
@@ -289,25 +288,3 @@ export const usePlayerStorage = create<PlayerStorage>()(
         ),
     ),
 );
-
-function getBoundingBox(item: Image, grid: GridParsed): BoundingBox {
-    const dpiScaling = grid.dpi / item.grid.dpi;
-    const width = item.image.width * item.scale.x * dpiScaling;
-    if (width === -1) {
-        console.error(item, grid.dpi);
-    }
-    const height = item.image.height * item.scale.y * dpiScaling;
-    return {
-        center: item.position,
-        width,
-        height,
-        min: Math2.subtract(item.position, {
-            x: width / 2,
-            y: height / 2,
-        }),
-        max: Math2.add(item.position, {
-            x: width / 2,
-            y: height / 2,
-        }),
-    };
-}
