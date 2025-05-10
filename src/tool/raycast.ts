@@ -1,11 +1,7 @@
 import type { Vector2 } from "@owlbear-rodeo/sdk";
-import {
-    COLOR_BACKUP,
-    COLOR_BLOCKED,
-    COLOR_PARTIAL_COVER,
-    COLOR_UNBLOCKED,
-} from "../constants";
+import { COLOR_BACKUP } from "../constants";
 import { usePlayerStorage } from "../state/usePlayerStorage";
+import { getPartialCoverColor } from "../utils";
 import { getGridCorners } from "./gridUtils";
 import type { Pin } from "./Pin";
 import { getPinId, getPinLocation } from "./Pin";
@@ -53,12 +49,12 @@ export function raycast(
             numCastsSucceeded += result;
             return {
                 endPosition: target,
-                color: result === 1 ? COLOR_UNBLOCKED : COLOR_PARTIAL_COVER,
+                color: getPartialCoverColor(result),
             };
         } else {
             return {
                 endPosition: result,
-                color: COLOR_BLOCKED,
+                color: getPartialCoverColor(0),
             };
         }
     });

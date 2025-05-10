@@ -1,14 +1,26 @@
 import type {
     BoundingBox,
     Curve,
+    CurveStyle,
     Line,
+    LineStyle,
     Shape,
+    ShapeStyle,
     ShapeType,
     Vector2,
     Wall,
 } from "@owlbear-rodeo/sdk";
 import OBR, { MathM } from "@owlbear-rodeo/sdk";
-import { matrixMultiply, PI_6 } from "owlbear-utils";
+import {
+    matrixMultiply,
+    PI_6,
+    RED_RGB,
+    rgbToHex,
+    WHITE_RGB,
+    YELLOW_RGB,
+    type HexColor,
+    type RgbColor,
+} from "owlbear-utils";
 
 export function boundingBoxContains(
     point: Vector2,
@@ -89,4 +101,44 @@ export function getShapeWorldPoints(shape: NonCircleShape): Vector2[] {
     }
     const transform = MathM.fromItem(shape);
     return points.map((point) => matrixMultiply(transform, point));
+}
+
+export function getPartialCoverColor(permissiveness: number): HexColor {
+    const clamped = Math.max(Math.min(permissiveness, 1), 0);
+    const [a, b, alpha] =
+        clamped <= 0.5
+            ? [RED_RGB, YELLOW_RGB, clamped * 2]
+            : [YELLOW_RGB, WHITE_RGB, (clamped - 0.5) * 2];
+    return rgbToHex({
+        x: a.x + (b.x - a.x) * alpha,
+        y: a.y + (b.y - a.y) * alpha,
+        z: a.z + (b.z - a.z) * alpha,
+    } as RgbColor);
+}
+
+export function getPartialCoverColorAndLineStyle(
+    permissiveness: number,
+): [color: HexColor, style: LineStyle] {
+    const color = getPartialCoverColor(permissiveness);
+    return [
+        color,
+        {
+            strokeColor: color,
+            strokeOpacity: 1,
+            strokeWidth: 10,
+            strokeDash: [1, 30],
+        },
+    ];
+}
+
+export function getPartialCoverCurveShapeStyle(
+    permissiveness: number,
+): CurveStyle | ShapeStyle {
+    const [color, style] = getPartialCoverColorAndLineStyle(permissiveness);
+
+    return {
+        ...style,
+        fillColor: color,
+        fillOpacity: 0.2,
+    };
 }

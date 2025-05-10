@@ -16,7 +16,7 @@ import OBR, {
 } from "@owlbear-rodeo/sdk";
 import pen from "../../assets/pen.svg";
 import {
-    COLOR_PARTIAL_COVER,
+    DEFAULT_PERMISSIVENESS,
     ID_TOOL,
     ID_TOOL_MODE_PARTIAL_COVER,
     ID_TOOL_MODE_PEN,
@@ -24,15 +24,18 @@ import {
     METADATA_KEY_IS_PEEKABOO_CONTROL,
     METADATA_KEY_PERMISSIVENESS,
     METADATA_KEY_TOOL_PEN_ENABLED,
-    STYLE_PARTIAL_COVER,
 } from "../constants";
+import {
+    getPartialCoverColorAndLineStyle,
+    getPartialCoverCurveShapeStyle,
+} from "../utils";
 
 function makePreviewLine(start: Vector2, end: Vector2): Line {
     return buildLine()
         .name("Peekaboo Cover Builder Line")
         .startPosition(start)
         .endPosition(end)
-        .style(STYLE_PARTIAL_COVER)
+        .style(getPartialCoverColorAndLineStyle(DEFAULT_PERMISSIVENESS)[1])
         .metadata(METADATA_CONTROL)
         .disableHit(true)
         .locked(true)
@@ -213,7 +216,8 @@ export class DrawCoverMode implements ToolMode {
         }
 
         // Build item
-        const metadata = { [METADATA_KEY_PERMISSIVENESS]: 0.5 };
+        const permissiveness = DEFAULT_PERMISSIVENESS;
+        const metadata = { [METADATA_KEY_PERMISSIVENESS]: permissiveness };
         let result: Item;
         if (linesActual[0] && linesActual.length <= 3) {
             // pressed enter with just a first point and a preview line
@@ -222,7 +226,7 @@ export class DrawCoverMode implements ToolMode {
                 .startPosition(linesActual[0].startPosition)
                 .endPosition(linesActual[0].endPosition)
                 .name("Partial Cover")
-                .style(STYLE_PARTIAL_COVER)
+                .style(getPartialCoverColorAndLineStyle(permissiveness)[1])
                 .visible(false)
                 .metadata(metadata)
                 .locked(true)
@@ -238,9 +242,7 @@ export class DrawCoverMode implements ToolMode {
                         .map((line) => line.startPosition),
                 )
                 .style({
-                    ...STYLE_PARTIAL_COVER,
-                    fillColor: COLOR_PARTIAL_COVER,
-                    fillOpacity: 0.1,
+                    ...getPartialCoverCurveShapeStyle(permissiveness),
                     tension: 0,
                 })
                 .visible(false)

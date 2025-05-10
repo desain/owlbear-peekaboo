@@ -23,6 +23,7 @@ import woodenFenceRemove from "../../assets/wooden-fence-remove.svg";
 import woodenFence from "../../assets/wooden-fence.svg";
 import {
     CONTROL_METADATA,
+    DEFAULT_PERMISSIVENESS,
     ID_TOOL,
     ID_TOOL_MODE_PARTIAL_COVER,
     ID_TOOL_MODE_PEN,
@@ -368,7 +369,8 @@ export class PartialCoverMode implements ToolMode {
             } else {
                 void OBR.scene.items.updateItems([target], (targets) =>
                     targets.forEach((target) => {
-                        target.metadata[METADATA_KEY_PERMISSIVENESS] = 0.5;
+                        target.metadata[METADATA_KEY_PERMISSIVENESS] =
+                            DEFAULT_PERMISSIVENESS;
                     }),
                 );
             }

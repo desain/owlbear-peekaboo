@@ -15,7 +15,7 @@ import { produce } from "immer";
 import { useRehydrate } from "owlbear-utils";
 import { useEffect, useState } from "react";
 import { version } from "../../package.json";
-import { COLOR_BACKUP } from "../constants";
+import { COLOR_BACKUP, DEFAULT_PERMISSIVENESS } from "../constants";
 import { setRoomMetadata } from "../state/roomMetadata";
 import { isMeasureTo, usePlayerStorage } from "../state/usePlayerStorage";
 
@@ -117,7 +117,7 @@ export function Settings() {
                                 <Switch
                                     checked={
                                         localRoomMetadata.characterPermissiveness ===
-                                        0.5
+                                        DEFAULT_PERMISSIVENESS
                                     }
                                     onChange={(e) =>
                                         setLocalRoomMetadata(
@@ -126,7 +126,7 @@ export function Settings() {
                                                 (roomMetadata) => {
                                                     roomMetadata.characterPermissiveness =
                                                         e.target.checked
-                                                            ? 0.5
+                                                            ? DEFAULT_PERMISSIVENESS
                                                             : 1;
                                                 },
                                             ),

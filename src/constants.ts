@@ -1,23 +1,11 @@
-import type {
-    CurveStyle,
-    LineStyle,
-    Metadata,
-    ShapeStyle,
-} from "@owlbear-rodeo/sdk";
+import type { Metadata } from "@owlbear-rodeo/sdk";
 
 const PLUGIN_ID = "com.desain.peekaboo";
 
+export const DEFAULT_PERMISSIVENESS = 0.5;
+
 // Colors
-export const COLOR_PARTIAL_COVER = "#ffff00";
-export const COLOR_UNBLOCKED = "#ffffff";
-export const COLOR_BLOCKED = "#ff0000";
 export const COLOR_BACKUP = "#ff00ff"; // should never see this
-export const STYLE_PARTIAL_COVER: LineStyle | CurveStyle | ShapeStyle = {
-    strokeColor: COLOR_PARTIAL_COVER,
-    strokeOpacity: 1,
-    strokeWidth: 10,
-    strokeDash: [1, 30],
-};
 
 // State
 export const LOCAL_STORAGE_STORE_NAME = `${PLUGIN_ID}/localStorage`;
