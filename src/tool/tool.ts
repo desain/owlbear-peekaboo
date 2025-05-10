@@ -12,9 +12,11 @@ import {
     ID_TOOL_ACTION_CLEANUP,
     ID_TOOL_ACTION_SETTINGS,
     ID_TOOL_ACTION_SWITCH_PRIVATE,
+    ID_TOOL_MODE_PEN,
     ID_TOOL_MODE_VISIBILITY,
     METADATA_KEY_IS_CONTROL,
     METADATA_KEY_TOOL_MEASURE_PRIVATE,
+    METADATA_KEY_TOOL_PEN_ENABLED,
 } from "../constants";
 import { openSettings } from "../popoverSettings/openSettings";
 import { usePlayerStorage } from "../state/usePlayerStorage";
@@ -65,9 +67,13 @@ async function installTool() {
         }),
         OBR.tool.createMode(new VisibilityMode()),
         OBR.tool.createMode(
-            new PartialCoverMode((clickPosition) =>
-                drawCoverMode.setInputPosition(clickPosition),
-            ),
+            new PartialCoverMode(async (clickPosition) => {
+                drawCoverMode.setInputPosition(clickPosition);
+                await OBR.tool.setMetadata(ID_TOOL, {
+                    [METADATA_KEY_TOOL_PEN_ENABLED]: true,
+                });
+                await OBR.tool.activateMode(ID_TOOL, ID_TOOL_MODE_PEN);
+            }),
         ),
         OBR.tool.createMode(drawCoverMode),
         OBR.tool.createAction({
