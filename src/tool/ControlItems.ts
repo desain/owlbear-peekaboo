@@ -32,7 +32,7 @@ export type ControlItems = [
      */
     highlight: Curve,
     /**
-     * Visibility lines from start to end corners
+     * Visibility lines from start to end corners or end center
      */
     ...lines: Line[],
 ];
@@ -92,7 +92,10 @@ export function makeInteractionItems(start: Pin, end: Pin): ControlItems {
         .metadata(CONTROL_METADATA)
         .build();
 
-    const lines = Array.from(Array(state.getGridCorners()), () =>
+    // Determine number of lines based on measureTo setting
+    const measureTo = state.measureTo;
+    const numLines = measureTo === "center" ? 1 : state.getGridCornerCount();
+    const lines = Array.from(Array(numLines), () =>
         buildLine()
             .name("Peekaboo Visibility Line")
             .strokeWidth(10)

@@ -1,8 +1,12 @@
 import {
     Box,
+    FormControl,
     FormControlLabel,
     FormGroup,
     FormHelperText,
+    FormLabel,
+    Radio,
+    RadioGroup,
     Switch,
     TextField,
     Typography,
@@ -13,14 +17,16 @@ import { useEffect, useState } from "react";
 import { version } from "../../package.json";
 import { COLOR_BACKUP } from "../constants";
 import { setRoomMetadata } from "../state/roomMetadata";
-import { usePlayerStorage } from "../state/usePlayerStorage";
+import { isMeasureTo, usePlayerStorage } from "../state/usePlayerStorage";
 
 export function Settings() {
     useRehydrate(usePlayerStorage);
 
     const snapOrigin = usePlayerStorage((store) => store.snapOrigin);
     const setSnapOrigin = usePlayerStorage((store) => store.setSnapOrigin);
-    const numGridCorners = usePlayerStorage((store) => store.getGridCorners());
+    const numGridCorners = usePlayerStorage((store) =>
+        store.getGridCornerCount(),
+    );
 
     const roomMetadata = usePlayerStorage((store) => store.roomMetadata);
 
@@ -32,6 +38,9 @@ export function Settings() {
     );
 
     const role = usePlayerStorage((store) => store.role);
+
+    const measureTo = usePlayerStorage((store) => store.measureTo);
+    const setMeasureTo = usePlayerStorage((store) => store.setMeasureTo);
 
     // debouncing
     const [localRoomMetadata, setLocalRoomMetadata] = useState(roomMetadata);
@@ -63,6 +72,38 @@ export function Settings() {
                 />
                 <FormHelperText>
                     Snap the origin of visibility checks to the grid.
+                </FormHelperText>
+            </FormGroup>
+            <FormGroup sx={{ mb: 2 }}>
+                <FormControl component="fieldset">
+                    <FormLabel component="legend">
+                        Measure visibility to
+                    </FormLabel>
+                    <RadioGroup
+                        row
+                        value={measureTo}
+                        onChange={(e) =>
+                            isMeasureTo(e.target.value)
+                                ? setMeasureTo(e.target.value)
+                                : null
+                        }
+                        name="measure-to"
+                    >
+                        <FormControlLabel
+                            value="corners"
+                            control={<Radio />}
+                            label="All corners"
+                        />
+                        <FormControlLabel
+                            value="center"
+                            control={<Radio />}
+                            label="Center only"
+                        />
+                    </RadioGroup>
+                </FormControl>
+                <FormHelperText>
+                    Choose whether to measure visibility to all corners of the
+                    target cell, or just the center.
                 </FormHelperText>
             </FormGroup>
             {role === "GM" && (
@@ -133,9 +174,15 @@ export function Settings() {
                                 }}
                             >
                                 <TextField
-                                    label={`${n} visible corner${
-                                        n !== 1 ? "s" : ""
-                                    }`}
+                                    label={
+                                        n === 0
+                                            ? "Fully blocked"
+                                            : n === 1
+                                            ? "1 visible corner"
+                                            : n === numGridCorners
+                                            ? "Fully visible"
+                                            : `${n} visible corners`
+                                    }
                                     value={
                                         localRoomMetadata.cornerConfigs[n]
                                             ?.label ?? ""
@@ -189,6 +236,7 @@ export function Settings() {
                                         background: "none",
                                         padding: 0,
                                         cursor: "pointer",
+                                        borderRadius: "50%", // Make the color input round
                                     }}
                                     title={`Color for ${n} visible corner${
                                         n !== 1 ? "s" : ""
