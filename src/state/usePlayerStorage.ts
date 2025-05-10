@@ -1,6 +1,6 @@
 import type { BoundingBox, Image, Item, Metadata } from "@owlbear-rodeo/sdk";
 import OBR, { isWall, Math2 } from "@owlbear-rodeo/sdk";
-import { featureCollection } from "@turf/turf";
+import { featureCollection } from "@turf/helpers";
 import type { FeatureCollection, LineString } from "geojson";
 import { enableMapSet } from "immer";
 import {

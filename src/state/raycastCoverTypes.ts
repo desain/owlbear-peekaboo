@@ -7,7 +7,7 @@ import {
     isShape,
     MathM,
 } from "@owlbear-rodeo/sdk";
-import { lineString } from "@turf/turf";
+import { lineString } from "@turf/helpers";
 import type { Feature, LineString, Position } from "geojson";
 import { isObject } from "owlbear-utils";
 import { METADATA_KEY_PERMISSIVENESS } from "../constants";
