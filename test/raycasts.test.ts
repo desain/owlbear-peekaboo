@@ -1,4 +1,4 @@
-import { featureCollection, lineString } from "@turf/helpers";
+import { lineString, multiLineString } from "@turf/helpers";
 import { describe, expect, it } from "vitest";
 import { METADATA_KEY_PERMISSIVENESS } from "../src/constants";
 import type { Cover } from "../src/coverTypes";
@@ -13,7 +13,7 @@ describe("raycastSingle", () => {
         walls: {
             lastModified: 0,
             lastIdSetSize: 0,
-            geometry: featureCollection([]),
+            geometry: multiLineString([]),
         },
     };
     const SQUARE_TOP_RIGHT_OF_ORIGIN: Pick<PlayerStorage, "partialCover"> = {
@@ -110,14 +110,14 @@ describe("raycastSingle", () => {
             walls: {
                 lastModified: 0,
                 lastIdSetSize: 0,
-                geometry: featureCollection([
-                    lineString([
+                geometry: multiLineString([
+                    [
                         [0, 0],
                         [0, -300],
                         [300, -300],
                         [300, 0],
                         [0, 0],
-                    ]),
+                    ],
                 ]),
             },
             partialCover: [],

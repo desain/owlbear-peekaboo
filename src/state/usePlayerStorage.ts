@@ -1,7 +1,7 @@
 import type { BoundingBox, Image, Item, Metadata } from "@owlbear-rodeo/sdk";
 import OBR, { isWall, Math2 } from "@owlbear-rodeo/sdk";
-import { featureCollection } from "@turf/helpers";
-import type { FeatureCollection, LineString } from "geojson";
+import { multiLineString } from "@turf/helpers";
+import type { Feature, MultiLineString } from "geojson";
 import { enableMapSet } from "immer";
 import {
     getId,
@@ -22,7 +22,7 @@ import { isToken } from "../Token";
 import {
     boundingBoxToLineString,
     getRaycastCover,
-    wallToLineString,
+    getWallPositions,
     type RaycastCover,
 } from "./raycastCoverTypes";
 import { isRoomMetadata, type RoomMetadata } from "./roomMetadata";
@@ -63,7 +63,7 @@ interface OwlbearStore {
     readonly walls: {
         readonly lastModified: number;
         readonly lastIdSetSize: number;
-        readonly geometry: FeatureCollection<LineString>;
+        readonly geometry: Feature<MultiLineString>;
     };
     readonly partialCover: RaycastCover[];
     readonly roomMetadata: RoomMetadata;
@@ -135,7 +135,7 @@ export const usePlayerStorage = create<PlayerStorage>()(
                 walls: {
                     lastModified: 0,
                     lastIdSetSize: 0,
-                    geometry: featureCollection([]),
+                    geometry: multiLineString([]),
                 },
                 partialCover: [],
                 roomMetadata: {
@@ -240,12 +240,12 @@ export const usePlayerStorage = create<PlayerStorage>()(
                     ) {
                         return;
                     }
-                    const features = wallItems.map(wallToLineString);
+                    const lineStrings = wallItems.map(getWallPositions);
                     return set({
                         walls: {
                             lastModified,
                             lastIdSetSize: idSet.size,
-                            geometry: featureCollection(features),
+                            geometry: multiLineString(lineStrings),
                         },
                     });
                 },
