@@ -1,6 +1,6 @@
 import { lineString, multiLineString } from "@turf/helpers";
 import { describe, expect, it } from "vitest";
-import { METADATA_KEY_PERMISSIVENESS } from "../src/constants";
+import { METADATA_KEY_SOLIDITY, SOLIDITY_NO_COVER } from "../src/constants";
 import type { Cover } from "../src/coverTypes";
 import { getRaycastCover } from "../src/state/raycastCoverTypes";
 import type { PlayerStorage } from "../src/state/usePlayerStorage";
@@ -29,7 +29,7 @@ describe("raycastSingle", () => {
                 ],
                 {
                     characterId: MOCK_ID,
-                    permissiveness: 0.5,
+                    solidity: 0.5,
                 },
             ),
         ],
@@ -46,7 +46,7 @@ describe("raycastSingle", () => {
         const end = { x: 200, y: 75 };
 
         const result = raycastSingle(state, start, end, MOCK_ID);
-        expect(result).toEqual(1);
+        expect(result).toEqual(SOLIDITY_NO_COVER);
     });
 
     it("Shouldn't let the destination interfere", () => {
@@ -60,7 +60,7 @@ describe("raycastSingle", () => {
         const end = { x: 75, y: 75 };
 
         const result = raycastSingle(state, start, end, undefined, MOCK_ID);
-        expect(result).toEqual(1);
+        expect(result).toEqual(SOLIDITY_NO_COVER);
     });
 
     it("Shouldn't return cover for start-adjacent objects", () => {
@@ -74,7 +74,7 @@ describe("raycastSingle", () => {
         const end = { x: -10, y: 0 };
 
         const result = raycastSingle(state, start, end);
-        expect(result).toEqual(1);
+        expect(result).toEqual(SOLIDITY_NO_COVER);
     });
 
     it("Shouldn't return cover for end-adjacent objects", () => {
@@ -88,7 +88,7 @@ describe("raycastSingle", () => {
         const end = { x: 0, y: 0 };
 
         const result = raycastSingle(state, start, end);
-        expect(result).toEqual(1);
+        expect(result).toEqual(SOLIDITY_NO_COVER);
     });
 
     it("Shouldn't return cover for both start and end-adjacent objects", () => {
@@ -102,7 +102,7 @@ describe("raycastSingle", () => {
         const end = { x: 150, y: -150 };
 
         const result = raycastSingle(state, start, end);
-        expect(result).toEqual(1);
+        expect(result).toEqual(SOLIDITY_NO_COVER);
     });
 
     it("Should return intersections", () => {
@@ -151,7 +151,7 @@ describe("raycastSingle", () => {
                     width: 10,
                     height: 10,
                     metadata: {
-                        [METADATA_KEY_PERMISSIVENESS]: 0.5,
+                        [METADATA_KEY_SOLIDITY]: 0.5,
                     },
                 } as Cover),
             ],
@@ -179,7 +179,7 @@ describe("raycastSingle", () => {
                     width: 10,
                     height: 10,
                     metadata: {
-                        [METADATA_KEY_PERMISSIVENESS]: 0.5,
+                        [METADATA_KEY_SOLIDITY]: 0.5,
                     },
                 } as Cover),
             ],
@@ -189,7 +189,7 @@ describe("raycastSingle", () => {
         const end = { x: 20, y: -7 };
         const result = raycastSingle(state, start, end);
 
-        expect(result).toEqual(1);
+        expect(result).toEqual(SOLIDITY_NO_COVER);
     });
 
     it("Should pass over top of wide ovals", () => {
@@ -207,7 +207,7 @@ describe("raycastSingle", () => {
                     width: 20,
                     height: 10,
                     metadata: {
-                        [METADATA_KEY_PERMISSIVENESS]: 0.5,
+                        [METADATA_KEY_SOLIDITY]: 0.5,
                     },
                 } as Cover),
             ],
@@ -217,22 +217,22 @@ describe("raycastSingle", () => {
         const end = { x: 20, y: -7 };
         const result = raycastSingle(state, start, end);
 
-        expect(result).toEqual(1);
+        expect(result).toEqual(SOLIDITY_NO_COVER);
     });
 
-    it("Should only return the worst when there are multiple partial covers", () => {
+    it("Should only return the most solid when there are multiple partial covers", () => {
         const state = {
             ...NO_WALLS,
             partialCover: [
                 // start -> first vertical line -> second vertical line -> end
-                // first line to pass through - should be ignored since high permissiveness
+                // first line to pass through - should be ignored since low solidity
                 lineString(
                     [
                         [5, -10],
                         [5, 10],
                     ],
                     {
-                        permissiveness: 0.8,
+                        solidity: 0.2,
                     },
                 ),
                 // second line to pass through - should bind
@@ -242,7 +242,7 @@ describe("raycastSingle", () => {
                         [10, 10],
                     ],
                     {
-                        permissiveness: 0.3,
+                        solidity: 0.9,
                     },
                 ),
             ],
@@ -252,6 +252,6 @@ describe("raycastSingle", () => {
         const end = { x: 20, y: 0 };
         const result = raycastSingle(state, start, end);
 
-        expect(result).toEqual(0.3);
+        expect(result).toEqual(0.9);
     });
 });

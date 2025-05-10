@@ -1,16 +1,13 @@
 import type {
     BoundingBox,
     Curve,
-    CurveStyle,
     Line,
-    LineStyle,
     Shape,
-    ShapeStyle,
     ShapeType,
     Vector2,
     Wall,
 } from "@owlbear-rodeo/sdk";
-import OBR, { MathM } from "@owlbear-rodeo/sdk";
+import OBR, { isCurve, isLine, MathM } from "@owlbear-rodeo/sdk";
 import {
     matrixMultiply,
     PI_6,
@@ -21,6 +18,8 @@ import {
     type HexColor,
     type RgbColor,
 } from "owlbear-utils";
+import { METADATA_KEY_SOLIDITY } from "./constants";
+import type { Cover } from "./coverTypes";
 
 export function boundingBoxContains(
     point: Vector2,
@@ -103,12 +102,12 @@ export function getShapeWorldPoints(shape: NonCircleShape): Vector2[] {
     return points.map((point) => matrixMultiply(transform, point));
 }
 
-export function getPartialCoverColor(permissiveness: number): HexColor {
-    const clamped = Math.max(Math.min(permissiveness, 1), 0);
+export function getPartialCoverColor(solidity: number): HexColor {
+    const clamped = Math.max(Math.min(solidity, 1), 0);
     const [a, b, alpha] =
         clamped <= 0.5
-            ? [RED_RGB, YELLOW_RGB, clamped * 2]
-            : [YELLOW_RGB, WHITE_RGB, (clamped - 0.5) * 2];
+            ? [WHITE_RGB, YELLOW_RGB, clamped * 2]
+            : [YELLOW_RGB, RED_RGB, (clamped - 0.5) * 2];
     return rgbToHex({
         x: a.x + (b.x - a.x) * alpha,
         y: a.y + (b.y - a.y) * alpha,
@@ -116,29 +115,17 @@ export function getPartialCoverColor(permissiveness: number): HexColor {
     } as RgbColor);
 }
 
-export function getPartialCoverColorAndLineStyle(
-    permissiveness: number,
-): [color: HexColor, style: LineStyle] {
-    const color = getPartialCoverColor(permissiveness);
-    return [
-        color,
-        {
-            strokeColor: color,
-            strokeOpacity: 1,
-            strokeWidth: 10,
-            strokeDash: [1, 30],
-        },
-    ];
-}
-
-export function getPartialCoverCurveShapeStyle(
-    permissiveness: number,
-): CurveStyle | ShapeStyle {
-    const [color, style] = getPartialCoverColorAndLineStyle(permissiveness);
-
-    return {
-        ...style,
-        fillColor: color,
-        fillOpacity: 0.2,
-    };
+export function updatePartialCoverStyle(cover: Cover) {
+    const color = getPartialCoverColor(cover.metadata[METADATA_KEY_SOLIDITY]);
+    cover.style.strokeColor = color;
+    cover.style.strokeOpacity = 1;
+    cover.style.strokeWidth = 10;
+    cover.style.strokeDash = [1, 30];
+    if (!isLine(cover)) {
+        cover.style.fillColor = color;
+        cover.style.fillOpacity = 0.2;
+        if (isCurve(cover)) {
+            cover.style.tension = 0;
+        }
+    }
 }

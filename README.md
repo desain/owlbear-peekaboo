@@ -36,13 +36,13 @@ For the GM, the tool also has a mode for creating partial cover. With this mode 
 
 When you right-click on a partial cover object (or select multiple and right-click), a context menu will appear with a slider labeled with a percentage (e.g., "60% permeable").
 
--   If you select multiple partial cover objects with different permissiveness values, the slider will show the average value and indicate "Mixed".
+-   If you select multiple partial cover objects with different solidity values, the slider will show the average value and indicate "Mixed".
 -   The slider will appear red if the selected objects have mixed values.
--   Drag or click the slider to set the same permissiveness value for all selected items.
--   The permissiveness value controls how much the cover reduces visibility (0% = solid wall, 100% = fully permeable).
+-   Drag or click the slider to set the same solidity value for all selected items.
+-   The solidity value controls how much the cover reduces visibility (0% = solid wall, 100% = fully permeable).
 -   You can also remove the partial cover status from selected items using the Remove button in the menu.
 
-Lines that pass through partial cover are multiplied by the cover's permeability for the purpose of counting the number of unobstructed vision lines that reach a target. For example, if 4 vision lines to a target pass through a 50% permeable partial cover, the target will have the same cover as if 2 lines were fully unobstructed and 2 were obstructed.
+Lines that pass through partial cover are multiplied by the cover's solidity for the purpose of counting the number of unobstructed vision lines that reach a target. For example, if 4 vision lines to a target pass through a 50% permeable partial cover, the target will have the same cover as if 2 lines were fully unobstructed and 2 were obstructed.
 
 If a line passes through multiple partial cover objects with different permeabilities, only the least permeable instance of partial cover will apply.
 
@@ -99,8 +99,6 @@ To make a production build run:
 -   Cleanup shouldn't destroy active measurements. only destroys others public measurements if called by gm. resets tool start and end
 -   take color input from utils once utils has it
 -   setting for restore previous visibility check when switching to tool: never/always/only on tokens
--   Rename permissiveness to permeability or cover factor in code
--   switch edit menu so full cover is on the right
 -   check image bounding boxes for rotated images
 
 ## License

@@ -41,15 +41,15 @@ function isCornerCountConfigs(configs: unknown): configs is CornerCountConfigs {
 export interface RoomMetadata {
     readonly cornerConfigs: CornerCountConfigs;
     /**
-     * How much of a vision line characters let through.
+     * How much of a vision line characters block.
      */
-    readonly characterPermissiveness: number;
+    readonly characterSolidity: number;
 }
 export function isRoomMetadata(metadata: unknown): metadata is RoomMetadata {
     return (
         isObject(metadata) &&
-        "characterPermissiveness" in metadata &&
-        typeof metadata.characterPermissiveness === "number" &&
+        "characterSolidity" in metadata &&
+        typeof metadata.characterSolidity === "number" &&
         "cornerConfigs" in metadata &&
         isCornerCountConfigs(metadata.cornerConfigs)
     );

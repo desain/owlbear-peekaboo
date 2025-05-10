@@ -13,7 +13,7 @@ import {
     ID_TOOL_ACTION_SETTINGS,
     ID_TOOL_ACTION_SWITCH_PRIVATE,
     ID_TOOL_MODE_VISIBILITY,
-    METADATA_KEY_IS_PEEKABOO_CONTROL,
+    METADATA_KEY_IS_CONTROL,
     METADATA_KEY_TOOL_MEASURE_PRIVATE,
 } from "../constants";
 import { openSettings } from "../popoverSettings/openSettings";
@@ -118,7 +118,7 @@ async function installTool() {
             ],
             onClick: async () => {
                 const isPeekabooControl = (item: Item) =>
-                    !!item.metadata[METADATA_KEY_IS_PEEKABOO_CONTROL];
+                    !!item.metadata[METADATA_KEY_IS_CONTROL];
                 await Promise.all([
                     OBR.scene.local
                         .getItems(isPeekabooControl)

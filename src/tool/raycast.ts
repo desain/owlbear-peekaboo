@@ -46,7 +46,9 @@ export function raycast(
             destinationId,
         );
         if (typeof result === "number") {
-            numCastsSucceeded += result;
+            // Success value is the reverse of solidity - eg a line through 75% solid cover
+            // counts for 25% of a line
+            numCastsSucceeded += 1 - result;
             return {
                 endPosition: target,
                 color: getPartialCoverColor(result),

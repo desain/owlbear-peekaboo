@@ -2,6 +2,7 @@ import { type Vector2 } from "@owlbear-rodeo/sdk";
 import { lineString } from "@turf/helpers";
 import { lineIntersect } from "@turf/line-intersect";
 import { matrixMultiply } from "owlbear-utils";
+import { SOLIDITY_NO_COVER } from "../constants";
 import {
     type RaycastCover,
     isRaycastCircle,
@@ -69,8 +70,8 @@ function intersect(
 }
 
 /**
- * @return Closest blocking point if the ray was blocked, or permissiveness if the ray
- *         was partially blocked. Permissiveness 1 means unblocked.
+ * @return Closest blocking point if the ray was blocked, or solidity if the ray
+ *         was partially blocked. Solidity 0 means unblocked, 1 means blocked.
  */
 export function raycastSingle(
     state: Readonly<Pick<PlayerStorage, "walls" | "partialCover">>,
@@ -116,7 +117,7 @@ export function raycastSingle(
     }
 
     // Check for partial cover
-    return state.partialCover.reduce((worstPermissiveness, cover) => {
+    return state.partialCover.reduce((highestSolidity, cover) => {
         // Skip cover corresponding to the origin or destination
         const isOriginOrDestination =
             (originId !== undefined &&
@@ -125,21 +126,17 @@ export function raycastSingle(
                 cover.properties.characterId === destinationId);
 
         if (!isOriginOrDestination) {
-            const intersections = intersect(start, end, cover);
             // Filter out intersections that are exactly at the origin or end
-            const filteredIntersections = intersections.filter(
+            const intersections = intersect(start, end, cover).filter(
                 (intersection) =>
                     !vector2Equals(intersection, start) &&
                     !vector2Equals(intersection, end),
             );
-            if (filteredIntersections.length !== 0) {
-                return Math.min(
-                    worstPermissiveness,
-                    cover.properties.permissiveness,
-                );
+            if (intersections.length !== 0) {
+                return Math.max(highestSolidity, cover.properties.solidity);
             }
         }
 
-        return worstPermissiveness;
-    }, 1);
+        return highestSolidity;
+    }, SOLIDITY_NO_COVER);
 }

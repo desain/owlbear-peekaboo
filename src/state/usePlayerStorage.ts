@@ -14,7 +14,7 @@ import { create } from "zustand";
 import { persist, subscribeWithSelector } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import {
-    DEFAULT_PERMISSIVENESS,
+    DEFAULT_SOLIDITY,
     LOCAL_STORAGE_STORE_NAME,
     METADATA_KEY_ROOM_METADATA,
 } from "../constants";
@@ -158,7 +158,7 @@ export const usePlayerStorage = create<PlayerStorage>()(
                 },
                 partialCover: [],
                 roomMetadata: {
-                    characterPermissiveness: DEFAULT_PERMISSIVENESS,
+                    characterSolidity: DEFAULT_SOLIDITY,
 
                     cornerConfigs: [
                         {
@@ -227,9 +227,8 @@ export const usePlayerStorage = create<PlayerStorage>()(
                             ([id, box]) =>
                                 boundingBoxToLineString(box, {
                                     characterId: id,
-                                    permissiveness:
-                                        state.roomMetadata
-                                            .characterPermissiveness,
+                                    solidity:
+                                        state.roomMetadata.characterSolidity,
                                 }),
                         );
                         const partialCover = items
@@ -275,8 +274,8 @@ export const usePlayerStorage = create<PlayerStorage>()(
                             state.roomMetadata = roomMetadata;
                             for (const partialCover of state.partialCover) {
                                 if (partialCover.properties.characterId) {
-                                    partialCover.properties.permissiveness =
-                                        roomMetadata.characterPermissiveness;
+                                    partialCover.properties.solidity =
+                                        roomMetadata.characterSolidity;
                                 }
                             }
                         });
