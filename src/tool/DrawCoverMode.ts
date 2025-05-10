@@ -90,8 +90,6 @@ export class DrawCoverMode implements ToolMode {
      * The last two are always the line going into and out of the mouse position.
      */
     #lineIds: string[] = [];
-    #metaDown = false;
-    #controlDown = false;
 
     readonly setInputPosition = (position: Vector2) => {
         this.#inputPosition = position;
@@ -102,7 +100,7 @@ export class DrawCoverMode implements ToolMode {
             return;
         }
 
-        const position = await this.#doSnap(this.#inputPosition);
+        const position = await OBR.scene.grid.snapPosition(this.#inputPosition);
         // Reset input position for next time
         this.#inputPosition = undefined;
 
@@ -135,13 +133,6 @@ export class DrawCoverMode implements ToolMode {
         }
     };
 
-    readonly #doSnap = async (position: Vector2): Promise<Vector2> => {
-        if (!this.#metaDown && !this.#controlDown) {
-            return await OBR.scene.grid.snapPosition(position);
-        }
-        return position;
-    };
-
     readonly #updatePosition = async (position: Vector2): Promise<Vector2> => {
         const lineToPointer = this.#lineIds[this.#lineIds.length - 2];
         const loopbackLine = this.#lineIds[this.#lineIds.length - 1];
@@ -150,7 +141,7 @@ export class DrawCoverMode implements ToolMode {
             return position;
         }
 
-        const snappedPosition = await this.#doSnap(position);
+        const snappedPosition = await OBR.scene.grid.snapPosition(position);
 
         await OBR.scene.local.updateItems<Line>(
             [lineToPointer, loopbackLine],
@@ -268,29 +259,12 @@ export class DrawCoverMode implements ToolMode {
         await OBR.scene.local.deleteItems(toDelete);
     };
 
-    onKeyDown = (_context: ToolContext, event: KeyEvent) => {
+    readonly onKeyDown = (_context: ToolContext, event: KeyEvent) => {
         switch (event.key) {
             case "Escape":
                 return this.#doLeaveTool();
             case "Enter":
                 return this.#doFinish();
-            case "Control":
-                // this.#controlDown = true;
-                break;
-            case "Meta":
-                // this.#metaDown = true;
-                break;
-        }
-    };
-
-    readonly onKeyUp = (_context: ToolContext, event: KeyEvent) => {
-        switch (event.key) {
-            case "Control":
-                this.#controlDown = false;
-                break;
-            case "Meta":
-                this.#metaDown = false;
-                break;
         }
     };
 
