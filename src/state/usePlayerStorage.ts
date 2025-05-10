@@ -29,6 +29,11 @@ import { isRoomMetadata, type RoomMetadata } from "./roomMetadata";
 
 enableMapSet();
 
+export type MeasureTo = "corners" | "center";
+export function isMeasureTo(measureTo: unknown) {
+    return measureTo === "corners" || measureTo === "center";
+}
+
 interface LocalStorage {
     readonly toolEnabled: boolean;
     readonly snapOrigin: boolean;
@@ -36,22 +41,29 @@ interface LocalStorage {
      * If true, right-click context menu for converting polygons is enabled.
      */
     readonly contextMenuEnabled: boolean;
+    /**
+     * How to measure visibility: to all corners or just the center.
+     */
+    readonly measureTo: MeasureTo;
     readonly setToolEnabled: (this: void, toolEnabled: boolean) => void;
     readonly setSnapOrigin: (this: void, snapOrigin: boolean) => void;
     readonly setContextMenuEnabled: (
         this: void,
         contextMenuEnabled: boolean,
     ) => void;
+    readonly setMeasureTo: (this: void, measureTo: MeasureTo) => void;
 }
 function partializeLocalStorage({
     toolEnabled,
     snapOrigin,
     contextMenuEnabled,
+    measureTo,
 }: LocalStorage): ExtractNonFunctions<LocalStorage> {
     return {
         toolEnabled,
         snapOrigin,
         contextMenuEnabled,
+        measureTo,
     };
 }
 
@@ -71,7 +83,11 @@ interface OwlbearStore {
     readonly setRole: (this: void, role: Role) => void;
     readonly setSceneReady: (this: void, sceneReady: boolean) => void;
     readonly setGrid: (this: void, grid: GridParams) => Promise<void>;
-    readonly getGridCorners: (this: void) => number;
+    /**
+     * @returns How many corners the current grid cells have - 4 for squares
+     *          and 6 for hexagons.
+     */
+    readonly getGridCornerCount: (this: void) => 4 | 6;
     readonly updateItems: (this: void, items: Item[]) => void;
     readonly updateLocalItems: (this: void, items: Item[]) => void;
     readonly handleRoomMetadataChange: (this: void, metadata: Metadata) => void;
@@ -113,10 +129,12 @@ export const usePlayerStorage = create<PlayerStorage>()(
                 toolEnabled: true,
                 snapOrigin: false,
                 contextMenuEnabled: false,
+                measureTo: "corners",
                 setToolEnabled: (toolEnabled) => set({ toolEnabled }),
                 setSnapOrigin: (snapOrigin) => set({ snapOrigin }),
                 setContextMenuEnabled: (contextMenuEnabled) =>
                     set({ contextMenuEnabled }),
+                setMeasureTo: (measureTo) => set({ measureTo }),
 
                 // owlbear store
                 role: "PLAYER",
@@ -186,7 +204,7 @@ export const usePlayerStorage = create<PlayerStorage>()(
                         },
                     });
                 },
-                getGridCorners: () => {
+                getGridCornerCount: () => {
                     const gridType = get().grid.type;
                     return gridType === "HEX_HORIZONTAL" ||
                         gridType === "HEX_VERTICAL"

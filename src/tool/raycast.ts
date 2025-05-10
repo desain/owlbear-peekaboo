@@ -29,27 +29,30 @@ export function raycast(
     end: Readonly<Pin>,
 ): RaycastResult {
     const startPosition = getPinLocation(start);
-
     const state = usePlayerStorage.getState();
     const endPosition = getPinLocation(end);
-    const corners = getGridCorners(endPosition, state.grid);
     const originId = getPinId(start);
     const destinationId = getPinId(end);
 
+    // Determine cast targets based on user setting
+    const [castTargets, castCountFactor] =
+        state.measureTo === "center"
+            ? [[endPosition], state.getGridCornerCount()]
+            : [getGridCorners(endPosition, state.grid), 1];
+
     let numCastsSucceeded = 0;
-    const lineResults: LineResult[] = corners.map((corner) => {
+    const lineResults: LineResult[] = castTargets.map((target) => {
         const result = raycastSingle(
             state,
             startPosition,
-            corner,
+            target,
             originId,
             destinationId,
         );
-
         if (typeof result === "number") {
             numCastsSucceeded += result;
             return {
-                endPosition: corner,
+                endPosition: target,
                 color: result === 1 ? COLOR_UNBLOCKED : COLOR_PARTIAL_COVER,
             };
         } else {
@@ -61,7 +64,7 @@ export function raycast(
     });
 
     const cornerConfig = state.roomMetadata.cornerConfigs[
-        Math.floor(numCastsSucceeded)
+        Math.floor(numCastsSucceeded * castCountFactor)
     ] ?? {
         label: "",
         color: COLOR_BACKUP,

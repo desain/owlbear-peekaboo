@@ -45,6 +45,7 @@ Clicking the cog icon in the tool's action bar will open its settings.
 Settings:
 
 -   **Snap Origins**: Whether the origin point of measurements snaps to the grid.
+-   **Measure visibility to**: Choose whether to measure visibility to all corners of the target cell, or just the center. This setting is per-user.
 -   **Enable Context Menu** (GM only): Turns on a context menu for lines, shapes, and polygons that lets you turn them into partial cover. This menu is only visible to the GM.
 -   **Characters are partial cover** (GM only): Sets a room-global setting which causes all tokens to be treated as partial cover. Useful for modeling how half cover works in games like D&D.
 -   **Labels and colors** (GM only). Sets room-global settings for how visibility will display.
@@ -89,7 +90,6 @@ To make a production build run:
 -   Cleanup shouldn't destroy active measurements. only destroys others public measurements if called by gm. resets tool start and end
 -   take color input from utils once utils has it
 -   setting for restore previous visibility check when switching to tool: never/always/only on tokens
--   option to measure only one line instead of all corners
 
 ## License
 
