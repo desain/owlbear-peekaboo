@@ -219,4 +219,39 @@ describe("raycastSingle", () => {
 
         expect(result).toEqual(1);
     });
+
+    it("Should only return the worst when there are multiple partial covers", () => {
+        const state = {
+            ...NO_WALLS,
+            partialCover: [
+                // start -> first vertical line -> second vertical line -> end
+                // first line to pass through - should be ignored since high permissiveness
+                lineString(
+                    [
+                        [5, -10],
+                        [5, 10],
+                    ],
+                    {
+                        permissiveness: 0.8,
+                    },
+                ),
+                // second line to pass through - should bind
+                lineString(
+                    [
+                        [10, -10],
+                        [10, 10],
+                    ],
+                    {
+                        permissiveness: 0.3,
+                    },
+                ),
+            ],
+        };
+
+        const start = { x: 0, y: 0 };
+        const end = { x: 20, y: 0 };
+        const result = raycastSingle(state, start, end);
+
+        expect(result).toEqual(0.3);
+    });
 });

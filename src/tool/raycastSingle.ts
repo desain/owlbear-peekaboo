@@ -116,26 +116,30 @@ export function raycastSingle(
     }
 
     // Check for partial cover
-    const blockingCover = state.partialCover.find((cover) => {
+    return state.partialCover.reduce((worstPermissiveness, cover) => {
         // Skip cover corresponding to the origin or destination
-        if (
-            (originId && cover.properties.characterId === originId) ||
-            (destinationId && cover.properties.characterId === destinationId)
-        ) {
-            return false;
-        }
-        const intersections = intersect(start, end, cover);
-        // Filter out intersections that are exactly at the origin or end
-        const filteredIntersections = intersections.filter(
-            (intersection) =>
-                !vector2Equals(intersection, start) &&
-                !vector2Equals(intersection, end),
-        );
-        if (filteredIntersections.length === 0) {
-            return false;
-        }
-        return true;
-    });
+        const isOriginOrDestination =
+            (originId !== undefined &&
+                cover.properties.characterId === originId) ||
+            (destinationId !== undefined &&
+                cover.properties.characterId === destinationId);
 
-    return blockingCover?.properties.permissiveness ?? 1;
+        if (!isOriginOrDestination) {
+            const intersections = intersect(start, end, cover);
+            // Filter out intersections that are exactly at the origin or end
+            const filteredIntersections = intersections.filter(
+                (intersection) =>
+                    !vector2Equals(intersection, start) &&
+                    !vector2Equals(intersection, end),
+            );
+            if (filteredIntersections.length !== 0) {
+                return Math.min(
+                    worstPermissiveness,
+                    cover.properties.permissiveness,
+                );
+            }
+        }
+
+        return worstPermissiveness;
+    }, 1);
 }
