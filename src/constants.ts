@@ -2,7 +2,9 @@ import type { Metadata } from "@owlbear-rodeo/sdk";
 
 const PLUGIN_ID = "com.desain.peekaboo";
 
-export const DEFAULT_PERMISSIVENESS = 0.5;
+export const DEFAULT_SOLIDITY = 0.5;
+export const SOLIDITY_NO_COVER = 0;
+export const SOLIDITY_FULL_COVER = 1;
 
 // Colors
 export const COLOR_BACKUP = "#ff00ff"; // should never see this
@@ -22,11 +24,11 @@ export const METADATA_KEY_TOOL_PEN_ENABLED = `${PLUGIN_ID}/penEnabled`;
 
 // Metadata
 export const METADATA_KEY_TOOL_MEASURE_PRIVATE = `${PLUGIN_ID}/measurePrivate`;
-export const METADATA_KEY_IS_PEEKABOO_CONTROL = `${PLUGIN_ID}/isControl`;
-export const METADATA_KEY_PERMISSIVENESS = `${PLUGIN_ID}/coverPermissiveness`;
+export const METADATA_KEY_IS_CONTROL = `${PLUGIN_ID}/isControl`;
+export const METADATA_KEY_SOLIDITY = `${PLUGIN_ID}/coverSolidity`;
 export const METADATA_KEY_ROOM_METADATA = `${PLUGIN_ID}/roomMetadata`;
 export const CONTROL_METADATA: Metadata = {
-    [METADATA_KEY_IS_PEEKABOO_CONTROL]: true,
+    [METADATA_KEY_IS_CONTROL]: true,
 };
 
 // Popover
@@ -37,4 +39,4 @@ export const CHANNEL_MESSAGES = `${PLUGIN_ID}/messages`;
 
 // Context menu
 export const ID_CONTEXT_MENU_CONVERT = `${PLUGIN_ID}/contextMenuConvert`;
-export const ID_CONTEXT_MENU_REMOVE = `${PLUGIN_ID}/contextMenuRemove`;
+export const ID_CONTEXT_MENU_EDIT = `${PLUGIN_ID}/contextMenuEdit`;

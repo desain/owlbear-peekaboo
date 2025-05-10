@@ -23,11 +23,11 @@ import woodenFenceRemove from "../../assets/wooden-fence-remove.svg";
 import woodenFence from "../../assets/wooden-fence.svg";
 import {
     CONTROL_METADATA,
-    DEFAULT_PERMISSIVENESS,
+    DEFAULT_SOLIDITY,
     ID_TOOL,
     ID_TOOL_MODE_PARTIAL_COVER,
     ID_TOOL_MODE_PEN,
-    METADATA_KEY_PERMISSIVENESS,
+    METADATA_KEY_SOLIDITY,
     METADATA_KEY_TOOL_PEN_ENABLED,
 } from "../constants";
 import type { CoverCandidate } from "../coverTypes";
@@ -54,7 +54,7 @@ type HoverState = "add" | "remove";
  * @returns Hover state of the given cover item when hovered over.
  */
 function getHoverState(item: CoverCandidate): HoverState {
-    return item.metadata[METADATA_KEY_PERMISSIVENESS] !== undefined
+    return item.metadata[METADATA_KEY_SOLIDITY] !== undefined
         ? "remove"
         : "add";
 }
@@ -204,24 +204,20 @@ export class PartialCoverMode implements ToolMode {
         const handleNewItems = (items: Item[]) =>
             this.#updateIcons(
                 items,
-                usePlayerStorage.getState().roomMetadata
-                    .characterPermissiveness,
+                usePlayerStorage.getState().roomMetadata.characterSolidity,
             );
         // Subscribe to item and config updates
         const unsubscribeItems = OBR.scene.items.onChange(handleNewItems);
-        const unsubscribePermissiveness = usePlayerStorage.subscribe(
-            (state) => state.roomMetadata.characterPermissiveness,
-            (characterPermissiveness) =>
+        const unsubscribeSolidity = usePlayerStorage.subscribe(
+            (state) => state.roomMetadata.characterSolidity,
+            (characterSolidity) =>
                 OBR.scene.items
                     .getItems()
                     .then((items) =>
-                        this.#updateIcons(items, characterPermissiveness),
+                        this.#updateIcons(items, characterSolidity),
                     ),
         );
-        this.#unsubscribe = deferCallAll(
-            unsubscribeItems,
-            unsubscribePermissiveness,
-        );
+        this.#unsubscribe = deferCallAll(unsubscribeItems, unsubscribeSolidity);
 
         // Initial population
         void OBR.scene.items.getItems().then(handleNewItems);
@@ -233,9 +229,9 @@ export class PartialCoverMode implements ToolMode {
      */
     readonly #updateIcons = async (
         items: Item[],
-        characterPermissiveness: number,
+        characterSolidity: number,
     ) => {
-        const includeTokens = characterPermissiveness !== 1;
+        const includeTokens = characterSolidity !== 1;
 
         // API call batching
         const toAdd: Image[] = [];
@@ -360,17 +356,17 @@ export class PartialCoverMode implements ToolMode {
         const target = event.target;
 
         if (target && isCoverCandidate(target)) {
-            if (target.metadata[METADATA_KEY_PERMISSIVENESS]) {
+            if (target.metadata[METADATA_KEY_SOLIDITY]) {
                 void OBR.scene.items.updateItems([target], (targets) =>
                     targets.forEach((target) => {
-                        delete target.metadata[METADATA_KEY_PERMISSIVENESS];
+                        delete target.metadata[METADATA_KEY_SOLIDITY];
                     }),
                 );
             } else {
                 void OBR.scene.items.updateItems([target], (targets) =>
                     targets.forEach((target) => {
-                        target.metadata[METADATA_KEY_PERMISSIVENESS] =
-                            DEFAULT_PERMISSIVENESS;
+                        target.metadata[METADATA_KEY_SOLIDITY] =
+                            DEFAULT_SOLIDITY;
                     }),
                 );
             }

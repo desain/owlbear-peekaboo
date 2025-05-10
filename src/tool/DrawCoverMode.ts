@@ -14,32 +14,32 @@ import OBR, {
     buildLine,
     isLine,
 } from "@owlbear-rodeo/sdk";
+import { assertItem } from "owlbear-utils";
 import pen from "../../assets/pen.svg";
 import {
-    DEFAULT_PERMISSIVENESS,
+    DEFAULT_SOLIDITY,
     ID_TOOL,
     ID_TOOL_MODE_PARTIAL_COVER,
     ID_TOOL_MODE_PEN,
     CONTROL_METADATA as METADATA_CONTROL,
-    METADATA_KEY_IS_PEEKABOO_CONTROL,
-    METADATA_KEY_PERMISSIVENESS,
+    METADATA_KEY_IS_CONTROL,
+    METADATA_KEY_SOLIDITY,
     METADATA_KEY_TOOL_PEN_ENABLED,
 } from "../constants";
-import {
-    getPartialCoverColorAndLineStyle,
-    getPartialCoverCurveShapeStyle,
-} from "../utils";
+import { isCover } from "../coverTypes";
+import { getPartialCoverColor, updatePartialCoverStyle } from "../utils";
 
 function makePreviewLine(start: Vector2, end: Vector2): Line {
-    return buildLine()
+    const line = buildLine()
         .name("Peekaboo Cover Builder Line")
         .startPosition(start)
         .endPosition(end)
-        .style(getPartialCoverColorAndLineStyle(DEFAULT_PERMISSIVENESS)[1])
         .metadata(METADATA_CONTROL)
+        .strokeColor(getPartialCoverColor(DEFAULT_SOLIDITY))
         .disableHit(true)
         .locked(true)
         .build();
+    return line;
 }
 
 /**
@@ -72,7 +72,7 @@ export class DrawCoverMode implements ToolMode {
                         value: "LABEL",
                     },
                     {
-                        key: ["metadata", METADATA_KEY_IS_PEEKABOO_CONTROL],
+                        key: ["metadata", METADATA_KEY_IS_CONTROL],
                         value: true,
                     },
                 ],
@@ -216,8 +216,8 @@ export class DrawCoverMode implements ToolMode {
         }
 
         // Build item
-        const permissiveness = DEFAULT_PERMISSIVENESS;
-        const metadata = { [METADATA_KEY_PERMISSIVENESS]: permissiveness };
+        const solidity = DEFAULT_SOLIDITY;
+        const metadata = { [METADATA_KEY_SOLIDITY]: solidity };
         let result: Item;
         if (linesActual[0] && linesActual.length <= 3) {
             // pressed enter with just a first point and a preview line
@@ -226,7 +226,6 @@ export class DrawCoverMode implements ToolMode {
                 .startPosition(linesActual[0].startPosition)
                 .endPosition(linesActual[0].endPosition)
                 .name("Partial Cover")
-                .style(getPartialCoverColorAndLineStyle(permissiveness)[1])
                 .visible(false)
                 .metadata(metadata)
                 .locked(true)
@@ -241,16 +240,15 @@ export class DrawCoverMode implements ToolMode {
                         .slice(undefined, -1)
                         .map((line) => line.startPosition),
                 )
-                .style({
-                    ...getPartialCoverCurveShapeStyle(permissiveness),
-                    tension: 0,
-                })
                 .visible(false)
                 .metadata(metadata)
                 .locked(true)
                 .layer("MAP")
                 .build();
         }
+
+        assertItem(result, isCover);
+        updatePartialCoverStyle(result);
 
         await Promise.all([
             this.#doLeaveTool(),
@@ -277,10 +275,10 @@ export class DrawCoverMode implements ToolMode {
             case "Enter":
                 return this.#doFinish();
             case "Control":
-                this.#controlDown = true;
+                // this.#controlDown = true;
                 break;
             case "Meta":
-                this.#metaDown = true;
+                // this.#metaDown = true;
                 break;
         }
     };
@@ -292,6 +290,7 @@ export class DrawCoverMode implements ToolMode {
                 break;
             case "Meta":
                 this.#metaDown = false;
+                break;
         }
     };
 

@@ -1,22 +1,16 @@
 import type { Curve, Item, KeyFilter, Line, Shape } from "@owlbear-rodeo/sdk";
 import { isCurve, isLine, isShape } from "@owlbear-rodeo/sdk";
 import type { HasParameterizedMetadata } from "owlbear-utils";
-import {
-    METADATA_KEY_IS_PEEKABOO_CONTROL,
-    METADATA_KEY_PERMISSIVENESS,
-} from "./constants";
+import { METADATA_KEY_IS_CONTROL, METADATA_KEY_SOLIDITY } from "./constants";
 
 // General cover
 
 const SMOKE_AND_SPECTRE_IS_VISION_LINE = "com.battle-system.smoke/isVisionLine";
 
 export type CoverCandidate = (Curve | Shape | Line) &
+    HasParameterizedMetadata<typeof METADATA_KEY_SOLIDITY, number | undefined> &
     HasParameterizedMetadata<
-        typeof METADATA_KEY_PERMISSIVENESS,
-        number | undefined
-    > &
-    HasParameterizedMetadata<
-        typeof METADATA_KEY_IS_PEEKABOO_CONTROL,
+        typeof METADATA_KEY_IS_CONTROL,
         false | undefined
     > &
     HasParameterizedMetadata<
@@ -27,17 +21,17 @@ export type CoverCandidate = (Curve | Shape | Line) &
 export function isCoverCandidate(item: Item): item is CoverCandidate {
     return (
         (isCurve(item) || isShape(item) || isLine(item)) &&
-        (!(METADATA_KEY_PERMISSIVENESS in item.metadata) ||
-            typeof item.metadata[METADATA_KEY_PERMISSIVENESS] === "number") &&
-        (!(METADATA_KEY_IS_PEEKABOO_CONTROL in item.metadata) ||
-            item.metadata[METADATA_KEY_IS_PEEKABOO_CONTROL] === false) &&
+        (!(METADATA_KEY_SOLIDITY in item.metadata) ||
+            typeof item.metadata[METADATA_KEY_SOLIDITY] === "number") &&
+        (!(METADATA_KEY_IS_CONTROL in item.metadata) ||
+            item.metadata[METADATA_KEY_IS_CONTROL] === false) &&
         (!(SMOKE_AND_SPECTRE_IS_VISION_LINE in item.metadata) ||
             item.metadata[SMOKE_AND_SPECTRE_IS_VISION_LINE] === false)
     );
 }
 const KEY_FILTER_COVER_CANDIDATE: KeyFilter[] = [
     {
-        key: ["metadata", METADATA_KEY_IS_PEEKABOO_CONTROL],
+        key: ["metadata", METADATA_KEY_IS_CONTROL],
         operator: "!=",
         value: true,
     },
@@ -49,24 +43,24 @@ const KEY_FILTER_COVER_CANDIDATE: KeyFilter[] = [
 ];
 
 export type Cover = CoverCandidate &
-    HasParameterizedMetadata<typeof METADATA_KEY_PERMISSIVENESS, number>;
+    HasParameterizedMetadata<typeof METADATA_KEY_SOLIDITY, number>;
 
 export function isCover(item: Item): item is Cover {
     return (
         isCoverCandidate(item) &&
-        METADATA_KEY_PERMISSIVENESS in item.metadata &&
-        typeof item.metadata[METADATA_KEY_PERMISSIVENESS] === "number"
+        METADATA_KEY_SOLIDITY in item.metadata &&
+        typeof item.metadata[METADATA_KEY_SOLIDITY] === "number"
     );
 }
 export const KEY_FILTER_NON_COVER: KeyFilter[] = [
     {
-        key: ["metadata", METADATA_KEY_PERMISSIVENESS],
+        key: ["metadata", METADATA_KEY_SOLIDITY],
         value: undefined,
     },
 ];
 export const KEY_FILTER_COVER: KeyFilter[] = [
     {
-        key: ["metadata", METADATA_KEY_PERMISSIVENESS],
+        key: ["metadata", METADATA_KEY_SOLIDITY],
         operator: "!=",
         value: undefined,
     },

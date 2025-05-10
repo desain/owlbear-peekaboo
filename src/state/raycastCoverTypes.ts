@@ -10,7 +10,7 @@ import {
 import { lineString } from "@turf/helpers";
 import type { Feature, LineString, Position } from "geojson";
 import { isObject } from "owlbear-utils";
-import { METADATA_KEY_PERMISSIVENESS } from "../constants";
+import { METADATA_KEY_SOLIDITY } from "../constants";
 import { type Cover, isCoverPolygon } from "../coverTypes";
 import {
     getLineWorldPoints,
@@ -25,16 +25,15 @@ export interface CoverProperties {
      */
     characterId?: string;
     /**
-     * How much the cover lets the line through. 0 = total
-     * blockage, 1 = no cover.
+     * How much the cover blocks the line line. 0 = no cover, 1 = full cover.
      */
-    permissiveness: number;
+    solidity: number;
 }
 function isCoverProperties(properties: unknown): properties is CoverProperties {
     return (
         isObject(properties) &&
-        "permissiveness" in properties &&
-        typeof properties.permissiveness === "number" &&
+        "solidity" in properties &&
+        typeof properties.solidity === "number" &&
         ("characterId" in properties
             ? typeof properties.characterId === "string"
             : true)
@@ -106,7 +105,7 @@ export function boundingBoxToLineString(
 
 export function getRaycastCover(cover: Cover): RaycastCover {
     const properties: CoverProperties = {
-        permissiveness: cover.metadata[METADATA_KEY_PERMISSIVENESS],
+        solidity: cover.metadata[METADATA_KEY_SOLIDITY],
     };
     let points: Vector2[];
     if (isCoverPolygon(cover)) {

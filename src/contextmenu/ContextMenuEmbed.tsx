@@ -1,17 +1,18 @@
 import DeleteIcon from "@mui/icons-material/Delete";
 import { Box, Button, Slider, Stack } from "@mui/material";
-import OBR, { isLine } from "@owlbear-rodeo/sdk";
+import OBR, { type Item } from "@owlbear-rodeo/sdk";
 import React, { useEffect, useState } from "react";
 import BrickWallIcon from "../../assets/brick-wall.svg";
 import BrokenWallIcon from "../../assets/broken-wall.svg";
-import { METADATA_KEY_PERMISSIVENESS } from "../constants";
-import { isCover, type Cover, type CoverCandidate } from "../coverTypes";
 import {
-    getPartialCoverColorAndLineStyle,
-    getPartialCoverCurveShapeStyle,
-} from "../utils";
+    METADATA_KEY_SOLIDITY,
+    SOLIDITY_FULL_COVER,
+    SOLIDITY_NO_COVER,
+} from "../constants";
+import { isCover, type CoverCandidate } from "../coverTypes";
+import { updatePartialCoverStyle } from "../utils";
 
-const PermissivenessSlider: React.FC<{
+const SoliditySlider: React.FC<{
     value: number;
     mixed: boolean;
     onChangeCommitted: (value: number) => void;
@@ -32,13 +33,13 @@ const PermissivenessSlider: React.FC<{
         >
             <Box
                 component="img"
-                src={BrickWallIcon}
-                alt="Solid wall"
-                sx={{ width: 28, height: 28, opacity: 0.7 }}
+                src={BrokenWallIcon}
+                alt="No Cover"
+                sx={{ width: 24, height: 24, opacity: 0.7 }}
             />
             <Slider
-                min={0}
-                max={1}
+                min={SOLIDITY_NO_COVER}
+                max={SOLIDITY_FULL_COVER}
                 step={0.05}
                 value={displayValue}
                 onChange={(_e, v) => {
@@ -51,26 +52,28 @@ const PermissivenessSlider: React.FC<{
                     flexGrow: 1,
                     ...(mixed && { color: "error.main" }),
                 }}
-                aria-label="Permissiveness"
+                aria-label="Solidity"
                 valueLabelDisplay="auto"
                 valueLabelFormat={(v) =>
                     mixed
-                        ? `Mixed, average ${Math.round(v * 100)}% permeable`
-                        : `${Math.round(v * 100)}% permeable`
+                        ? `Mixed, average ${Math.round(v * 100)}% cover`
+                        : `${Math.round(v * 100)}% cover`
                 }
             />
             <img
-                src={BrokenWallIcon}
-                alt="Broken wall"
-                style={{ width: 28, height: 28, opacity: 0.7 }}
+                src={BrickWallIcon}
+                alt="Full Cover"
+                style={{ width: 24, height: 24, opacity: 0.7 }}
             />
         </Stack>
     );
 };
 
-export const ContextMenu: React.FC = () => {
+function useSelectedItems<ItemType extends Item>(
+    isItemType: (item: Item) => item is ItemType,
+): ItemType[] {
     const [selection, setSelection] = useState<string[]>([]);
-    const [selectedItems, setSelectedItems] = useState<Cover[]>([]);
+    const [selectedItems, setSelectedItems] = useState<ItemType[]>([]);
 
     useEffect(() => {
         void OBR.player.getSelection().then((selection) => {
@@ -89,31 +92,34 @@ export const ContextMenu: React.FC = () => {
         if (selection.length > 0) {
             void OBR.scene.items
                 .getItems(selection)
-                .then((items) => setSelectedItems(items.filter(isCover)));
+                .then((items) => setSelectedItems(items.filter(isItemType)));
         }
         return OBR.scene.items.onChange((items) =>
             setSelectedItems(
                 items
-                    .filter(isCover)
+                    .filter(isItemType)
                     .filter((item) => selection.includes(item.id)),
             ),
         );
-    }, [selection]);
+    }, [isItemType, selection]);
+
+    return selectedItems;
+}
+
+export const ContextMenu: React.FC = () => {
+    const selectedItems = useSelectedItems(isCover);
 
     if (selectedItems.length === 0) {
         return null;
     }
 
-    // Compute permissiveness values for all selected items
-    const permissivenessValues = selectedItems.map(
-        (item) => item.metadata[METADATA_KEY_PERMISSIVENESS],
+    // Compute solidity values for all selected items
+    const solidityValues = selectedItems.map(
+        (item) => item.metadata[METADATA_KEY_SOLIDITY],
     );
-    const isMixed = !permissivenessValues.every(
-        (v) => v === permissivenessValues[0],
-    );
-    const averagePermissiveness =
-        permissivenessValues.reduce((a, b) => a + b, 0) /
-        permissivenessValues.length;
+    const isMixed = !solidityValues.every((v) => v === solidityValues[0]);
+    const averageSolidity =
+        solidityValues.reduce((a, b) => a + b, 0) / solidityValues.length;
 
     return (
         <Stack
@@ -129,7 +135,7 @@ export const ContextMenu: React.FC = () => {
                         items.forEach((item) => {
                             // SAFETY: All Cover is also CoverCandidate
                             delete (item as CoverCandidate).metadata[
-                                METADATA_KEY_PERMISSIVENESS
+                                METADATA_KEY_SOLIDITY
                             ];
                         });
                     });
@@ -138,29 +144,14 @@ export const ContextMenu: React.FC = () => {
             >
                 Remove
             </Button>
-            <PermissivenessSlider
-                value={averagePermissiveness}
+            <SoliditySlider
+                value={averageSolidity}
                 mixed={isMixed}
-                onChangeCommitted={(permissiveness) => {
+                onChangeCommitted={(solidity) => {
                     void OBR.scene.items.updateItems(selectedItems, (items) => {
                         items.forEach((item) => {
-                            item.metadata[METADATA_KEY_PERMISSIVENESS] =
-                                permissiveness;
-                            if (isLine(item)) {
-                                item.style = {
-                                    ...item.style,
-                                    ...getPartialCoverColorAndLineStyle(
-                                        permissiveness,
-                                    ),
-                                };
-                            } else {
-                                item.style = {
-                                    ...item.style,
-                                    ...getPartialCoverCurveShapeStyle(
-                                        permissiveness,
-                                    ),
-                                };
-                            }
+                            item.metadata[METADATA_KEY_SOLIDITY] = solidity;
+                            updatePartialCoverStyle(item);
                         });
                     });
                 }}
