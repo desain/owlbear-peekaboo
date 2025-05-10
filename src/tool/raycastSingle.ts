@@ -83,7 +83,7 @@ function intersect(
  *         was partially blocked. Permissiveness 1 means unblocked.
  */
 export function raycastSingle(
-    state: PlayerStorage,
+    state: Readonly<Pick<PlayerStorage, "walls" | "partialCover">>,
     start: Readonly<Vector2>,
     end: Readonly<Vector2>,
     /**

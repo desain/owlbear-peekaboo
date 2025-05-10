@@ -1,19 +1,22 @@
 import { featureCollection, lineString } from "@turf/turf";
 import { describe, expect, it } from "vitest";
+import { METADATA_KEY_PERMISSIVENESS } from "../src/constants";
+import type { Cover } from "../src/coverTypes";
+import { getRaycastCover } from "../src/state/raycastCoverTypes";
 import type { PlayerStorage } from "../src/state/usePlayerStorage";
 import { raycastSingle } from "../src/tool/raycastSingle";
 
 describe("raycastSingle", () => {
     const MOCK_ID = "mock-id";
 
-    const NO_WALLS: Partial<PlayerStorage> = {
+    const NO_WALLS: Pick<PlayerStorage, "walls"> = {
         walls: {
             lastModified: 0,
             lastIdSetSize: 0,
             geometry: featureCollection([]),
         },
     };
-    const SQUARE_TOP_RIGHT_OF_ORIGIN: Partial<PlayerStorage> = {
+    const SQUARE_TOP_RIGHT_OF_ORIGIN: Pick<PlayerStorage, "partialCover"> = {
         partialCover: [
             // Square to the top right of the origin
             lineString(
@@ -61,10 +64,10 @@ describe("raycastSingle", () => {
     });
 
     it("Shouldn't return cover for start-adjacent objects", () => {
-        const state: PlayerStorage = {
+        const state = {
             ...NO_WALLS,
             ...SQUARE_TOP_RIGHT_OF_ORIGIN,
-        } as PlayerStorage;
+        };
 
         // Go from origin to the left
         const start = { x: 0, y: 0 };
@@ -75,10 +78,10 @@ describe("raycastSingle", () => {
     });
 
     it("Shouldn't return cover for end-adjacent objects", () => {
-        const state: PlayerStorage = {
+        const state = {
             ...NO_WALLS,
             ...SQUARE_TOP_RIGHT_OF_ORIGIN,
-        } as PlayerStorage;
+        };
 
         // Come in from the top left of the origin - shouldn't hit anything
         const start = { x: -75, y: -75 };
@@ -89,10 +92,10 @@ describe("raycastSingle", () => {
     });
 
     it("Shouldn't return cover for both start and end-adjacent objects", () => {
-        const state: PlayerStorage = {
+        const state = {
             ...NO_WALLS,
             ...SQUARE_TOP_RIGHT_OF_ORIGIN,
-        } as PlayerStorage;
+        };
 
         // Cross the square
         const start = { x: 0, y: 0 };
@@ -103,7 +106,7 @@ describe("raycastSingle", () => {
     });
 
     it("Should return intersections", () => {
-        const state: PlayerStorage = {
+        const state = {
             walls: {
                 lastModified: 0,
                 lastIdSetSize: 0,
@@ -117,7 +120,8 @@ describe("raycastSingle", () => {
                     ]),
                 ]),
             },
-        } as PlayerStorage;
+            partialCover: [],
+        };
 
         const start = { x: -75, y: -225 };
         const ends = [
@@ -132,5 +136,31 @@ describe("raycastSingle", () => {
         results.forEach((result, i) => {
             expect(result).not.toEqual(ends[i]);
         });
+    });
+
+    it("Should intersect circles", () => {
+        const state = {
+            ...NO_WALLS,
+            partialCover: [
+                getRaycastCover({
+                    type: "SHAPE",
+                    shapeType: "CIRCLE",
+                    position: { x: 0, y: 0 },
+                    rotation: 0,
+                    scale: { x: 1, y: 1 },
+                    width: 10,
+                    height: 10,
+                    metadata: {
+                        [METADATA_KEY_PERMISSIVENESS]: 0.5,
+                    },
+                } as Cover),
+            ],
+        };
+
+        const start = { x: -20, y: 0 };
+        const end = { x: 0, y: 0 };
+        const result = raycastSingle(state, start, end);
+
+        expect(result).toEqual(0.5);
     });
 });
