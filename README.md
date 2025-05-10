@@ -90,6 +90,7 @@ To make a production build run:
 -   take color input from utils once utils has it
 -   Partial cover goes on map layer?
 -   setting for restore previous visibility check when switching to tool: never/always/only on tokens
+-   circle width height as scale
 
 ## License
 

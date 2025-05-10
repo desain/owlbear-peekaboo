@@ -27,6 +27,7 @@ export default defineConfig({
         },
     },
     test: {
+        environment: "jsdom",
         includeSource: ["src/**/*.{js,ts}"],
         setupFiles: ["./test/vitest.setup.ts"],
         // For some reason, this package breaks with Vitest unless
