@@ -82,7 +82,6 @@ To make a production build run:
 ## To do
 
 -   two sets of lines, white until the stop point, red/yellow after
--   Turf separate imports? https://turfjs.org/docs/api/featureCollection, https://turfjs.org/docs/api/lineIntersect
 -   Combine walls? https://turfjs.org/docs/api/combine
 -   Figure out how to set different types of partial cover (3/4, etc)
     -   Context menu on partial cover?

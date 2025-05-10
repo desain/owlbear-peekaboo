@@ -1,4 +1,4 @@
-import { featureCollection, lineString } from "@turf/turf";
+import { featureCollection, lineString } from "@turf/helpers";
 import { describe, expect, it } from "vitest";
 import { METADATA_KEY_PERMISSIVENESS } from "../src/constants";
 import type { Cover } from "../src/coverTypes";
