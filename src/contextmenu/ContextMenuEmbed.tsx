@@ -1,11 +1,15 @@
 import DeleteIcon from "@mui/icons-material/Delete";
 import { Box, Button, Slider, Stack } from "@mui/material";
-import OBR from "@owlbear-rodeo/sdk";
+import OBR, { isLine } from "@owlbear-rodeo/sdk";
 import React, { useEffect, useState } from "react";
 import BrickWallIcon from "../../assets/brick-wall.svg";
 import BrokenWallIcon from "../../assets/broken-wall.svg";
 import { METADATA_KEY_PERMISSIVENESS } from "../constants";
 import { isCover, type Cover, type CoverCandidate } from "../coverTypes";
+import {
+    getPartialCoverColorAndLineStyle,
+    getPartialCoverCurveShapeStyle,
+} from "../utils";
 
 const PermissivenessSlider: React.FC<{
     value: number;
@@ -102,7 +106,7 @@ export const ContextMenu: React.FC = () => {
 
     // Compute permissiveness values for all selected items
     const permissivenessValues = selectedItems.map(
-        (item) => item.metadata?.[METADATA_KEY_PERMISSIVENESS] ?? 0.5,
+        (item) => item.metadata[METADATA_KEY_PERMISSIVENESS],
     );
     const isMixed = !permissivenessValues.every(
         (v) => v === permissivenessValues[0],
@@ -137,10 +141,26 @@ export const ContextMenu: React.FC = () => {
             <PermissivenessSlider
                 value={averagePermissiveness}
                 mixed={isMixed}
-                onChangeCommitted={(value) => {
+                onChangeCommitted={(permissiveness) => {
                     void OBR.scene.items.updateItems(selectedItems, (items) => {
                         items.forEach((item) => {
-                            item.metadata[METADATA_KEY_PERMISSIVENESS] = value;
+                            item.metadata[METADATA_KEY_PERMISSIVENESS] =
+                                permissiveness;
+                            if (isLine(item)) {
+                                item.style = {
+                                    ...item.style,
+                                    ...getPartialCoverColorAndLineStyle(
+                                        permissiveness,
+                                    ),
+                                };
+                            } else {
+                                item.style = {
+                                    ...item.style,
+                                    ...getPartialCoverCurveShapeStyle(
+                                        permissiveness,
+                                    ),
+                                };
+                            }
                         });
                     });
                 }}

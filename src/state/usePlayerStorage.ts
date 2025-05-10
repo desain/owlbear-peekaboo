@@ -14,6 +14,7 @@ import { create } from "zustand";
 import { persist, subscribeWithSelector } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import {
+    DEFAULT_PERMISSIVENESS,
     LOCAL_STORAGE_STORE_NAME,
     METADATA_KEY_ROOM_METADATA,
 } from "../constants";
@@ -157,7 +158,7 @@ export const usePlayerStorage = create<PlayerStorage>()(
                 },
                 partialCover: [],
                 roomMetadata: {
-                    characterPermissiveness: 0.5,
+                    characterPermissiveness: DEFAULT_PERMISSIVENESS,
 
                     cornerConfigs: [
                         {

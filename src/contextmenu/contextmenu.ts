@@ -1,10 +1,10 @@
 import OBR from "@owlbear-rodeo/sdk";
 import woodenFence from "../../assets/wooden-fence.svg";
 import {
+    DEFAULT_PERMISSIVENESS,
     ID_CONTEXT_MENU_CONVERT,
     ID_CONTEXT_MENU_REMOVE as ID_CONTEXT_MENU_EDIT,
     METADATA_KEY_PERMISSIVENESS,
-    STYLE_PARTIAL_COVER,
 } from "../constants";
 import {
     isCover,
@@ -14,6 +14,7 @@ import {
     KEY_FILTERS_COVER_CANDIDATES,
 } from "../coverTypes";
 import { usePlayerStorage } from "../state/usePlayerStorage";
+import { getPartialCoverCurveShapeStyle } from "../utils";
 
 export async function startWatchingContextMenuEnabled(): Promise<VoidFunction> {
     if (usePlayerStorage.getState().contextMenuEnabled) {
@@ -50,12 +51,16 @@ function installContextMenu() {
                 OBR.scene.items.updateItems(context.items, (items) =>
                     items.forEach((item) => {
                         if (isCoverCandidate(item) && !isCover(item)) {
+                            const permissiveness = DEFAULT_PERMISSIVENESS;
                             item.visible = false;
                             item.locked = true;
-                            item.metadata[METADATA_KEY_PERMISSIVENESS] = 0.5;
+                            item.metadata[METADATA_KEY_PERMISSIVENESS] =
+                                permissiveness;
                             item.style = {
                                 ...item.style,
-                                ...STYLE_PARTIAL_COVER,
+                                ...getPartialCoverCurveShapeStyle(
+                                    permissiveness,
+                                ),
                             };
                         }
                     }),
