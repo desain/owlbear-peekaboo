@@ -82,12 +82,11 @@ export function positionToVector2([x, y]: Position): Vector2 {
     return { x, y };
 }
 
-export function wallToLineString(wall: Readonly<Wall>): Feature<LineString> {
-    const coords: Position[] = getWorldPoints(wall).map(vector2ToPosition);
-    if (coords.length < 2) {
-        throw new Error("Invalid wall: " + JSON.stringify(coords));
+export function getWallPositions(wall: Readonly<Wall>): Position[] {
+    if (wall.points.length < 2) {
+        throw new Error("Invalid wall: " + JSON.stringify(wall));
     }
-    return lineString(coords);
+    return getWorldPoints(wall).map(vector2ToPosition);
 }
 
 export function boundingBoxToLineString(

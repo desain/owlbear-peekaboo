@@ -90,28 +90,27 @@ export function raycastSingle(
     // Check for blocking cover
     let closestPt: Vector2 | null = null;
     let minDistSq = Infinity;
-    for (const wall of state.walls.geometry.features) {
-        // TODO use single intersect for both
-        const ray = lineString([
-            [start.x, start.y],
-            [end.x, end.y],
-        ]);
-        const intersections = lineIntersect(ray, wall.geometry);
-        for (const feat of intersections.features) {
-            const [x, y] = feat.geometry.coordinates;
-            if (x === undefined || y === undefined) {
-                continue;
-            }
-            const pt = { x, y };
-            const dx = start.x - pt.x;
-            const dy = start.y - pt.y;
-            const dSq = dx * dx + dy * dy;
-            if (dSq < minDistSq) {
-                minDistSq = dSq;
-                closestPt = pt;
-            }
+    // TODO use single intersect for both
+    const ray = lineString([
+        [start.x, start.y],
+        [end.x, end.y],
+    ]);
+    const intersections = lineIntersect(ray, state.walls.geometry);
+    for (const feat of intersections.features) {
+        const [x, y] = feat.geometry.coordinates;
+        if (x === undefined || y === undefined) {
+            continue;
+        }
+        const pt = { x, y };
+        const dx = start.x - pt.x;
+        const dy = start.y - pt.y;
+        const dSq = dx * dx + dy * dy;
+        if (dSq < minDistSq) {
+            minDistSq = dSq;
+            closestPt = pt;
         }
     }
+
     if (closestPt) {
         return closestPt;
     }
