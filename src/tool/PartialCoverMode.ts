@@ -26,9 +26,7 @@ import {
     DEFAULT_SOLIDITY,
     ID_TOOL,
     ID_TOOL_MODE_PARTIAL_COVER,
-    ID_TOOL_MODE_PEN,
     METADATA_KEY_SOLIDITY,
-    METADATA_KEY_TOOL_PEN_ENABLED,
 } from "../constants";
 import type { CoverCandidate } from "../coverTypes";
 import {
@@ -182,7 +180,7 @@ export class PartialCoverMode implements ToolMode {
         },
     ];
 
-    readonly #handleMapClick: (position: Vector2) => void;
+    readonly #handleStartPolygon: (position: Vector2) => void;
     /**
      * Line/Polygon/Shape/Token ID -> Icon
      */
@@ -196,8 +194,8 @@ export class PartialCoverMode implements ToolMode {
      */
     #hoverCoverId?: string;
 
-    constructor(handleMapClick: (position: Vector2) => void) {
-        this.#handleMapClick = handleMapClick;
+    constructor(handleStartPolygon: (position: Vector2) => void) {
+        this.#handleStartPolygon = handleStartPolygon;
     }
 
     readonly onActivate = () => {
@@ -372,12 +370,13 @@ export class PartialCoverMode implements ToolMode {
             }
         } else {
             // start drawing cover
-            this.#handleMapClick(event.pointerPosition);
-            void OBR.tool
-                .setMetadata(ID_TOOL, { [METADATA_KEY_TOOL_PEN_ENABLED]: true })
-                .then(() => OBR.tool.activateMode(ID_TOOL, ID_TOOL_MODE_PEN));
+            this.#handleStartPolygon(event.pointerPosition);
         }
         return false;
+    };
+
+    readonly onToolDragStart = (_context: ToolContext, event: ToolEvent) => {
+        this.#handleStartPolygon(event.pointerPosition);
     };
 
     // disable double click to select
