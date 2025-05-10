@@ -14,7 +14,6 @@ interface LineResult {
 
 export interface RaycastResult {
     startPosition: Vector2;
-    endPosition: Vector2;
     labelText: string;
     highlightColor: string;
     lineResults: LineResult[];
@@ -70,7 +69,6 @@ export function raycast(
 
     return {
         startPosition,
-        endPosition,
         labelText: cornerConfig.label,
         highlightColor: cornerConfig.color,
         lineResults,

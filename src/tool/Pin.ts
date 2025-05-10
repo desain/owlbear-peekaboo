@@ -70,16 +70,21 @@ export async function updatePin(pin: Pin): Promise<Pin> {
 export async function movePin(
     oldPin: Pin | null,
     newPosition: Vector2,
-): Promise<[pin: Pin, didChange: boolean]> {
-    const snappedPosition = await snapToCenter(newPosition);
+    doSnap: boolean,
+): Promise<[pin: Pin, didChange: boolean, cellCenter: Vector2]> {
+    const cellCenter = await snapToCenter(newPosition);
 
-    if (oldPin && vector2Equals(snappedPosition, getPinLocation(oldPin))) {
-        return [oldPin, false];
+    if (doSnap) {
+        newPosition = cellCenter;
+    }
+
+    if (oldPin && vector2Equals(newPosition, getPinLocation(oldPin))) {
+        return [oldPin, false, cellCenter];
     }
 
     const boundingBoxes = usePlayerStorage.getState().characterBoundingBoxes;
     const targetToken = boundingBoxes.find(([, boundingBox]) =>
-        boundingBoxContains(snappedPosition, boundingBox),
+        boundingBoxContains(newPosition, boundingBox),
     );
     if (targetToken) {
         const [targetId, { center }] = targetToken;
@@ -87,16 +92,18 @@ export async function movePin(
             {
                 id: targetId,
                 cachedPosition: center,
-                offset: Math2.subtract(snappedPosition, center),
+                offset: Math2.subtract(newPosition, center),
             } satisfies TokenPin,
             true,
+            cellCenter,
         ];
     } else {
         return [
             {
-                position: snappedPosition,
+                position: newPosition,
             } satisfies LocationPin,
             true,
+            cellCenter,
         ];
     }
 }

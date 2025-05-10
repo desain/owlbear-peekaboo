@@ -109,7 +109,7 @@ describe("raycastSingle", () => {
         const state = {
             walls: {
                 lastModified: 0,
-                lastIdSetSize: 0,
+                lastWallCount: 0,
                 geometry: multiLineString([
                     [
                         [0, 0],

@@ -66,7 +66,11 @@ export function makeIcon(position: Vector2): Image {
 /**
  * @returns Item temporaries (not added to OBR yet).
  */
-export function makeInteractionItems(start: Pin, end: Pin): ControlItems {
+export function makeInteractionItems(
+    start: Pin,
+    end: Pin,
+    endCenter: Vector2,
+): ControlItems {
     const state = usePlayerStorage.getState();
 
     const label = buildLabel()
@@ -112,19 +116,14 @@ export function makeInteractionItems(start: Pin, end: Pin): ControlItems {
 
     const raycastResult = raycast(start, end);
 
-    fixControlItems(items, raycastResult);
+    fixControlItems(items, raycastResult, endCenter);
     return items;
 }
 
 export function fixControlItems(
     [label, highlight, ...lines]: ControlItems,
-    {
-        startPosition,
-        endPosition,
-        labelText,
-        highlightColor,
-        lineResults,
-    }: RaycastResult,
+    { startPosition, labelText, highlightColor, lineResults }: RaycastResult,
+    endCenter: Vector2,
 ) {
     const state = usePlayerStorage.getState();
 
@@ -136,11 +135,11 @@ export function fixControlItems(
     }
     const dpi = state.grid.dpi;
     label.text.plainText = labelText;
-    label.position = Math2.add(endPosition, { x: 0, y: -dpi / 2 });
+    label.position = Math2.add(endCenter, { x: 0, y: -dpi / 2 });
 
     // Fix highlight
     highlight.points = getGridCorners({ x: 0, y: 0 }, state.grid);
-    highlight.position = endPosition;
+    highlight.position = endCenter;
     highlight.style.fillColor = highlightColor;
     highlight.style.strokeColor = highlightColor;
 

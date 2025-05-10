@@ -1,4 +1,5 @@
 import type {
+    KeyEvent,
     ToolContext,
     ToolEvent,
     ToolIcon,
@@ -39,7 +40,13 @@ import {
     stopDragging,
 } from "./ModeState";
 import type { LocationPin, Pin, TokenPin } from "./Pin";
-import { isLocationPin, isTokenPin, movePin, updatePin } from "./Pin";
+import {
+    getPinLocation,
+    isLocationPin,
+    isTokenPin,
+    movePin,
+    updatePin,
+} from "./Pin";
 import { raycast } from "./raycast";
 
 function getIsPrivate(context: ToolContext): boolean {
@@ -94,6 +101,8 @@ export class VisibilityMode implements ToolMode {
      * State of tool mode.
      */
     #modeState: ModeState = null;
+    #metaDown = false;
+    #controlDown = false;
 
     static readonly #getStart = async (event: ToolEvent): Promise<Pin> => {
         let startPosition = event.pointerPosition;
@@ -146,11 +155,16 @@ export class VisibilityMode implements ToolMode {
                 updatePin(this.#modeState.start),
                 updatePin(this.#modeState.end),
             ]);
+            const endCenter = await snapToCenter(getPinLocation(newEnd));
             if (!isRememberPreviousDragState(this.#modeState)) {
                 return; // state was changed from underneath us
             }
 
-            const displayItems = makeInteractionItems(newStart, newEnd);
+            const displayItems = makeInteractionItems(
+                newStart,
+                newEnd,
+                endCenter,
+            );
             const itemApi = getItemApi(context);
             void itemApi.addItems(displayItems);
 
@@ -171,6 +185,30 @@ export class VisibilityMode implements ToolMode {
             );
         }
     };
+
+    readonly onKeyDown = (_context: ToolContext, event: KeyEvent) => {
+        switch (event.key) {
+            case "Control":
+                this.#controlDown = true;
+                break;
+            case "Meta":
+                this.#metaDown = true;
+                break;
+        }
+    };
+
+    readonly onKeyUp = (_context: ToolContext, event: KeyEvent) => {
+        switch (event.key) {
+            case "Control":
+                this.#controlDown = false;
+                break;
+            case "Meta":
+                this.#metaDown = false;
+                break;
+        }
+    };
+
+    readonly #shouldSnap = () => !this.#controlDown && !this.#metaDown;
 
     readonly onToolDragStart = (context: ToolContext, event: ToolEvent) => {
         // console.log("onToolDragStart");
@@ -201,8 +239,12 @@ export class VisibilityMode implements ToolMode {
         event: ToolEvent,
     ) => {
         const start = await VisibilityMode.#getStart(event);
-        const [initialEnd] = await movePin(null, event.pointerPosition);
-        const controls = makeInteractionItems(start, initialEnd);
+        const [initialEnd, , endCenter] = await movePin(
+            null,
+            event.pointerPosition,
+            this.#shouldSnap(),
+        );
+        const controls = makeInteractionItems(start, initialEnd, endCenter);
         if (!isInitializingDragState(this.#modeState)) {
             return; // state was changed underneath us
         }
@@ -249,9 +291,10 @@ export class VisibilityMode implements ToolMode {
         if (!isDraggingState(this.#modeState)) {
             return; // state was changed from underneath us
         }
-        const [newEnd, changedEnd] = await movePin(
+        const [newEnd, changedEnd, cellCenter] = await movePin(
             this.#modeState.end,
             newPointerPosition,
+            this.#shouldSnap(),
         );
         if (!changedEnd) {
             return;
@@ -271,7 +314,7 @@ export class VisibilityMode implements ToolMode {
 
         const lastUpdatedItems = await this.#modeState.interaction.update(
             (items) => {
-                fixControlItems(items, raycastResult);
+                fixControlItems(items, raycastResult, cellCenter);
             },
         );
         if (!isDraggingState(this.#modeState)) {
