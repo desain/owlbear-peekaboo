@@ -10,7 +10,11 @@ import OBR, { Math2 } from "@owlbear-rodeo/sdk";
 import type { ItemApi } from "owlbear-utils";
 import eyeTarget from "../../assets/eye-target.svg";
 
-import { createLocalInteraction, wrapRealInteraction } from "owlbear-utils";
+import {
+    createLocalInteraction,
+    getId,
+    wrapRealInteraction,
+} from "owlbear-utils";
 import {
     ID_TOOL,
     ID_TOOL_MODE_VISIBILITY,
@@ -21,6 +25,7 @@ import { snapToCenter } from "../utils";
 import type { ControlItems } from "./ControlItems";
 import {
     fixControlItems,
+    isControl,
     makeIcon,
     makeInteractionItems,
 } from "./ControlItems";
@@ -213,7 +218,10 @@ export class VisibilityMode implements ToolMode {
     readonly onToolDragStart = (context: ToolContext, event: ToolEvent) => {
         // console.log("onToolDragStart");
         if (isDisplayingPreviousDragState(this.#modeState)) {
-            this.#modeState = stopDisplayingPreviousDrag(this.#modeState);
+            this.#modeState = stopDisplayingPreviousDrag(
+                this.#modeState,
+                false,
+            );
         }
 
         if (
@@ -279,9 +287,12 @@ export class VisibilityMode implements ToolMode {
         } else if (isDraggingState(this.#modeState)) {
             // console.log("onToolDragMove: dragging");
             void this.#handleDragEvent(event.pointerPosition);
+        } else if (this.#modeState === null) {
+            // Likely we're here because the user cleared the drag in the middle of dragging
+            return;
         } else {
             console.warn(
-                "[Peekaboo] onToolDragMove: expected initializing or dragging, got",
+                "[Peekaboo] onToolDragMove: expected initializing/dragging/null, got",
                 this.#modeState,
             );
         }
@@ -346,6 +357,8 @@ export class VisibilityMode implements ToolMode {
                 return; // state was changed from underneath us
             }
             this.#modeState = stopDragging(this.#modeState, keep);
+        } else if (this.#modeState === null) {
+            return; // we're here because we already cancelled a drag
         } else {
             console.warn(
                 "[Peekaboo] stopCurrentState: Expected dragging/initializing, got",
@@ -356,12 +369,35 @@ export class VisibilityMode implements ToolMode {
 
     readonly onDeactivate = () => {
         // console.log("onDeactivate");
+        void this.clear(true);
+    };
+
+    readonly clear = async (remember: boolean) => {
         if (isDisplayingPreviousDragState(this.#modeState)) {
-            void deleteIcons(this.#modeState);
-            this.#modeState = stopDisplayingPreviousDrag(this.#modeState);
+            await deleteIcons(this.#modeState);
+            this.#modeState = stopDisplayingPreviousDrag(
+                this.#modeState,
+                remember,
+            );
         } else if (isDraggingState(this.#modeState)) {
-            void deleteIcons(this.#modeState);
+            await deleteIcons(this.#modeState);
             this.#modeState = stopDragging(this.#modeState, false);
         }
+
+        const state = usePlayerStorage.getState();
+        await Promise.all([
+            OBR.scene.local
+                .getItems(isControl)
+                .then((items) => items.map(getId))
+                .then((ids) => OBR.scene.local.deleteItems(ids)),
+            OBR.scene.items
+                .getItems(
+                    (item) =>
+                        isControl(item) &&
+                        state.playerId === item.createdUserId,
+                )
+                .then((items) => items.map(getId))
+                .then((ids) => OBR.scene.items.deleteItems(ids)),
+        ]);
     };
 }

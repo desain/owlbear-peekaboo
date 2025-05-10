@@ -91,8 +91,12 @@ export class DrawCoverMode implements ToolMode {
      */
     #lineIds: string[] = [];
 
-    readonly setInputPosition = (position: Vector2) => {
+    readonly activate = async (position: Vector2) => {
         this.#inputPosition = position;
+        await OBR.tool.setMetadata(ID_TOOL, {
+            [METADATA_KEY_TOOL_PEN_ENABLED]: true,
+        });
+        await OBR.tool.activateMode(ID_TOOL, ID_TOOL_MODE_PEN);
     };
 
     readonly onActivate = async () => {

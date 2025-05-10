@@ -1,4 +1,4 @@
-import type { Item, ToolContext } from "@owlbear-rodeo/sdk";
+import type { ToolContext } from "@owlbear-rodeo/sdk";
 import OBR from "@owlbear-rodeo/sdk";
 import broom from "../../assets/broom.svg";
 import chatBubble from "../../assets/chat-bubble.svg";
@@ -6,17 +6,13 @@ import cog from "../../assets/cog.svg";
 import eyeTarget from "../../assets/eye-target.svg";
 import thoughtBubble from "../../assets/thought-bubble.svg";
 
-import { getId } from "owlbear-utils";
 import {
     ID_TOOL,
     ID_TOOL_ACTION_CLEANUP,
     ID_TOOL_ACTION_SETTINGS,
     ID_TOOL_ACTION_SWITCH_PRIVATE,
-    ID_TOOL_MODE_PEN,
     ID_TOOL_MODE_VISIBILITY,
-    METADATA_KEY_IS_CONTROL,
     METADATA_KEY_TOOL_MEASURE_PRIVATE,
-    METADATA_KEY_TOOL_PEN_ENABLED,
 } from "../constants";
 import { openSettings } from "../popoverSettings/openSettings";
 import { usePlayerStorage } from "../state/usePlayerStorage";
@@ -41,6 +37,7 @@ export async function startWatchingToolEnabled(): Promise<VoidFunction> {
 }
 
 async function installTool() {
+    const visibilityMode = new VisibilityMode();
     const drawCoverMode = new DrawCoverMode();
     await Promise.all([
         OBR.tool.create({
@@ -65,15 +62,11 @@ async function installTool() {
             defaultMetadata: {},
             defaultMode: ID_TOOL_MODE_VISIBILITY,
         }),
-        OBR.tool.createMode(new VisibilityMode()),
+        OBR.tool.createMode(visibilityMode),
         OBR.tool.createMode(
-            new PartialCoverMode(async (clickPosition) => {
-                drawCoverMode.setInputPosition(clickPosition);
-                await OBR.tool.setMetadata(ID_TOOL, {
-                    [METADATA_KEY_TOOL_PEN_ENABLED]: true,
-                });
-                await OBR.tool.activateMode(ID_TOOL, ID_TOOL_MODE_PEN);
-            }),
+            new PartialCoverMode((clickPosition) =>
+                drawCoverMode.activate(clickPosition),
+            ),
         ),
         OBR.tool.createMode(drawCoverMode),
         OBR.tool.createAction({
@@ -122,20 +115,7 @@ async function installTool() {
                     },
                 },
             ],
-            onClick: async () => {
-                const isPeekabooControl = (item: Item) =>
-                    !!item.metadata[METADATA_KEY_IS_CONTROL];
-                await Promise.all([
-                    OBR.scene.local
-                        .getItems(isPeekabooControl)
-                        .then((items) => items.map(getId))
-                        .then((ids) => OBR.scene.local.deleteItems(ids)),
-                    OBR.scene.items
-                        .getItems(isPeekabooControl)
-                        .then((items) => items.map(getId))
-                        .then((ids) => OBR.scene.items.deleteItems(ids)),
-                ]);
-            },
+            onClick: () => visibilityMode.clear(false),
         }),
         OBR.tool.createAction({
             id: ID_TOOL_ACTION_SETTINGS,

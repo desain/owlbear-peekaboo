@@ -96,7 +96,6 @@ To make a production build run:
 
 -   two sets of lines, white until the stop point, red/yellow after
 -   Paths as cover - context menu turns them into line strings, like [dynamic fog](https://github.com/owlbear-rodeo/dynamic-fog/blob/main/src/background/util/PathHelpers.ts)
--   Cleanup shouldn't destroy active measurements. only destroys others public measurements if called by gm. resets tool start and end
 -   take color input from utils once utils has it
 -   setting for restore previous visibility check when switching to tool: never/always/only on tokens
 

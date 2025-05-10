@@ -27,10 +27,11 @@ export function startSyncing(): [
     // console.log("startSyncing");
     const store = usePlayerStorage.getState();
 
-    const roleInitialized = OBR.player.getRole().then(store.setRole);
-    const unsubscribePlayer = OBR.player.onChange((player) =>
-        store.setRole(player.role),
-    );
+    const playerInitialized = Promise.all([
+        OBR.player.getId(),
+        OBR.player.getRole(),
+    ]).then(([id, role]) => store.handlePlayerChange({ id, role }));
+    const unsubscribePlayer = OBR.player.onChange(store.handlePlayerChange);
 
     const sceneReadyInitialized = OBR.scene.isReady().then(store.setSceneReady);
     const unsubscribeSceneReady = OBR.scene.onReadyChange((ready) => {
@@ -73,7 +74,7 @@ export function startSyncing(): [
 
     return [
         Promise.all([
-            roleInitialized,
+            playerInitialized,
             sceneReadyInitialized,
             gridInitialized,
             itemsInitialized,

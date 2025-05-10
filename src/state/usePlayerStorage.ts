@@ -1,4 +1,4 @@
-import type { BoundingBox, Item, Metadata } from "@owlbear-rodeo/sdk";
+import type { BoundingBox, Item, Metadata, Player } from "@owlbear-rodeo/sdk";
 import OBR, { isWall, Math2 } from "@owlbear-rodeo/sdk";
 import { lineString, multiLineString } from "@turf/helpers";
 import type { Feature, MultiLineString } from "geojson";
@@ -70,6 +70,7 @@ function partializeLocalStorage({
 
 interface OwlbearStore {
     readonly role: Role;
+    readonly playerId: string;
     readonly sceneReady: boolean;
     readonly grid: GridParsed;
     readonly characterBoundingBoxes: [id: string, box: BoundingBox][];
@@ -81,7 +82,10 @@ interface OwlbearStore {
     readonly partialCover: RaycastCover[];
     readonly roomMetadata: RoomMetadata;
 
-    readonly setRole: (this: void, role: Role) => void;
+    readonly handlePlayerChange: (
+        this: void,
+        player: Pick<Player, "role" | "id">,
+    ) => void;
     readonly setSceneReady: (this: void, sceneReady: boolean) => void;
     readonly setGrid: (this: void, grid: GridParams) => Promise<void>;
     /**
@@ -139,6 +143,7 @@ export const usePlayerStorage = create<PlayerStorage>()(
 
                 // owlbear store
                 role: "PLAYER",
+                playerId: "",
                 sceneReady: false,
                 grid: {
                     dpi: -1,
@@ -191,9 +196,10 @@ export const usePlayerStorage = create<PlayerStorage>()(
                         },
                     ],
                 },
-                setRole: (role: Role) => set({ role }),
-                setSceneReady: (sceneReady: boolean) => set({ sceneReady }),
-                setGrid: async (grid: GridParams) => {
+                handlePlayerChange: (player) =>
+                    set({ role: player.role, playerId: player.id }),
+                setSceneReady: (sceneReady) => set({ sceneReady }),
+                setGrid: async (grid) => {
                     const parsedScale = (await OBR.scene.grid.getScale())
                         .parsed;
                     return set({
