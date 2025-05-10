@@ -30,12 +30,26 @@ export interface CoverProperties {
      */
     permissiveness: number;
 }
+function isCoverProperties(properties: unknown): properties is CoverProperties {
+    return (
+        isObject(properties) &&
+        "permissiveness" in properties &&
+        typeof properties.permissiveness === "number" &&
+        ("characterId" in properties
+            ? typeof properties.characterId === "string"
+            : true)
+    );
+}
+
 type RaycastLineString = Feature<LineString, CoverProperties>;
 interface RaycastCircle {
     properties: CoverProperties;
-    radius: number;
     /**
      * Matrix that encodes the position, rotation, and scale.
+     * The scale includes the original width and height of the circle, as well
+     * as any scaling that was applied after - this transform turns a unit
+     * circle centered at the origin into the circle represented
+     * by this object.
      */
     transform: Matrix;
     inverseTransformCache: Matrix;
@@ -43,21 +57,29 @@ interface RaycastCircle {
 export function isRaycastCircle(circle: unknown): circle is RaycastCircle {
     return (
         isObject(circle) &&
-        "radius" in circle &&
-        typeof circle.radius === "number" &&
+        "properties" in circle &&
+        isCoverProperties(circle.properties) &&
         "transform" in circle &&
         Array.isArray(circle.transform) &&
         circle.transform.length === 9 &&
-        // TODO check all elements are numbers?
+        circle.transform.every((n) => typeof n === "number") &&
         "inverseTransformCache" in circle &&
         Array.isArray(circle.inverseTransformCache) &&
-        circle.inverseTransformCache.length === 9
+        circle.inverseTransformCache.length === 9 &&
+        circle.inverseTransformCache.every((n) => typeof n === "number")
     );
 }
 export type RaycastCover = RaycastLineString | RaycastCircle;
 
 export function vector2ToPosition(vector: { x: number; y: number }): Position {
     return [vector.x, vector.y];
+}
+
+export function positionToVector2([x, y]: Position): Vector2 {
+    if (x === undefined || y === undefined) {
+        throw Error("invalid position");
+    }
+    return { x, y };
 }
 
 export function wallToLineString(wall: Readonly<Wall>): Feature<LineString> {
@@ -106,10 +128,15 @@ export function getRaycastCover(cover: Cover): RaycastCover {
                 points.push(points[0]);
             }
         } else {
-            const transform = MathM.fromItem(cover);
+            const transform = MathM.multiply(
+                MathM.fromItem(cover),
+                MathM.fromScale({
+                    x: cover.width / 2,
+                    y: cover.height / 2,
+                }),
+            );
             return {
                 properties,
-                radius: Math.max(cover.width, cover.height) / 2,
                 transform,
                 inverseTransformCache: MathM.inverse(transform),
             } satisfies RaycastCircle;

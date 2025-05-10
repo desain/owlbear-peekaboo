@@ -163,4 +163,60 @@ describe("raycastSingle", () => {
 
         expect(result).toEqual(0.5);
     });
+
+    it("Should pass over top of wide-scaled ovals", () => {
+        const state = {
+            ...NO_WALLS,
+            partialCover: [
+                // oval that extends from -10 to 10 on the x axis
+                // but only -5 to 5 on the y axis
+                getRaycastCover({
+                    type: "SHAPE",
+                    shapeType: "CIRCLE",
+                    position: { x: 0, y: 0 },
+                    rotation: 0,
+                    scale: { x: 2, y: 1 },
+                    width: 10,
+                    height: 10,
+                    metadata: {
+                        [METADATA_KEY_PERMISSIVENESS]: 0.5,
+                    },
+                } as Cover),
+            ],
+        };
+
+        const start = { x: -20, y: -7 };
+        const end = { x: 20, y: -7 };
+        const result = raycastSingle(state, start, end);
+
+        expect(result).toEqual(1);
+    });
+
+    it("Should pass over top of wide ovals", () => {
+        const state = {
+            ...NO_WALLS,
+            partialCover: [
+                // oval that extends from -10 to 10 on the x axis
+                // but only -5 to 5 on the y axis
+                getRaycastCover({
+                    type: "SHAPE",
+                    shapeType: "CIRCLE",
+                    position: { x: 0, y: 0 },
+                    rotation: 0,
+                    scale: { x: 1, y: 1 },
+                    width: 20,
+                    height: 10,
+                    metadata: {
+                        [METADATA_KEY_PERMISSIVENESS]: 0.5,
+                    },
+                } as Cover),
+            ],
+        };
+
+        const start = { x: -20, y: -7 };
+        const end = { x: 20, y: -7 };
+        const result = raycastSingle(state, start, end);
+
+        expect(result).toEqual(1);
+    });
 });

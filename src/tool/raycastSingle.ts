@@ -1,35 +1,25 @@
 import { type Vector2 } from "@owlbear-rodeo/sdk";
-import {
-    featureCollection,
-    lineIntersect,
-    lineString,
-    point,
-} from "@turf/turf";
-import type { FeatureCollection, Point } from "geojson";
+import { lineIntersect, lineString } from "@turf/turf";
 import { matrixMultiply } from "owlbear-utils";
 import {
     type RaycastCover,
     isRaycastCircle,
-    vector2ToPosition,
+    positionToVector2,
 } from "../state/raycastCoverTypes";
 import type { PlayerStorage } from "../state/usePlayerStorage";
+import { vector2Equals } from '../utils';
 
 /**
- * Find intercepts with a circle centered on the origin.
- * https://stackoverflow.com/questions/37224912/circle-line-segment-collision
+ * Find intercepts with a unit circle centered on the origin.
+ * Based on https://stackoverflow.com/questions/37224912/circle-line-segment-collision
+ * @returns list of intercept points
  */
-function interceptCircleLineSeg(
-    radius: number,
-    p1: Vector2,
-    p2: Vector2,
-): Vector2[] {
+function interceptCircleLineSeg(p1: Vector2, p2: Vector2): Vector2[] {
     const v1 = { x: p2.x - p1.x, y: p2.y - p1.y };
     const v2 = { x: p1.x, y: p1.y };
     const b = (v1.x * v2.x + v1.y * v2.y) * -2;
     const c = 2 * (v1.x * v1.x + v1.y * v1.y);
-    const d = Math.sqrt(
-        b * b - 2 * c * (v2.x * v2.x + v2.y * v2.y - radius * radius),
-    );
+    const d = Math.sqrt(b * b - 2 * c * (v2.x * v2.x + v2.y * v2.y - 1));
     if (isNaN(d)) {
         // no intercept
         return [];
@@ -52,7 +42,7 @@ function intersect(
     start: Readonly<Vector2>,
     end: Readonly<Vector2>,
     cover: RaycastCover,
-): FeatureCollection<Point> {
+): Vector2[] {
     if (isRaycastCircle(cover)) {
         const circleSpaceStart = matrixMultiply(
             cover.inverseTransformCache,
@@ -60,21 +50,20 @@ function intersect(
         );
         const circleSpaceEnd = matrixMultiply(cover.inverseTransformCache, end);
         const circleSpaceIntersections = interceptCircleLineSeg(
-            cover.radius,
             circleSpaceStart,
             circleSpaceEnd,
         );
-        return featureCollection(
-            circleSpaceIntersections.map((pt) =>
-                point(vector2ToPosition(matrixMultiply(cover.transform, pt))),
-            ),
+        return circleSpaceIntersections.map((pt) =>
+            matrixMultiply(cover.transform, pt),
         );
     } else {
         const ray = lineString([
             [start.x, start.y],
             [end.x, end.y],
         ]);
-        return lineIntersect(ray, cover);
+        return lineIntersect(ray, cover).features.map((pt) =>
+            positionToVector2(pt.geometry.coordinates),
+        );
     }
 }
 
@@ -137,14 +126,10 @@ export function raycastSingle(
         }
         const intersections = intersect(start, end, cover);
         // Filter out intersections that are exactly at the origin or end
-        const filteredIntersections = intersections.features.filter(
-            ({
-                geometry: {
-                    coordinates: [x, y],
-                },
-            }) =>
-                (x !== start.x || y !== start.y) &&
-                (x !== end.x || y !== end.y),
+        const filteredIntersections = intersections.filter(
+            (intersection) =>
+                !vector2Equals(intersection, start) &&
+                !vector2Equals(intersection, end),
         );
         if (filteredIntersections.length === 0) {
             return false;

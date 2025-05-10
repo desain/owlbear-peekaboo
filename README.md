@@ -85,12 +85,13 @@ To make a production build run:
 -   Turf separate imports? https://turfjs.org/docs/api/featureCollection, https://turfjs.org/docs/api/lineIntersect
 -   Combine walls? https://turfjs.org/docs/api/combine
 -   Figure out how to set different types of partial cover (3/4, etc)
+    -   Context menu on partial cover?
 -   Paths as cover - context menu turns them into line strings, like [dynamic fog](https://github.com/owlbear-rodeo/dynamic-fog/blob/main/src/background/util/PathHelpers.ts)
 -   Cleanup shouldn't destroy active measurements. only destroys others public measurements if called by gm. resets tool start and end
 -   take color input from utils once utils has it
 -   Partial cover goes on map layer?
 -   setting for restore previous visibility check when switching to tool: never/always/only on tokens
--   circle width height as scale
+-   option to measure only one line instead of all corners
 
 ## License
 
