@@ -99,7 +99,9 @@ To make a production build run:
 -   Cleanup shouldn't destroy active measurements. only destroys others public measurements if called by gm. resets tool start and end
 -   take color input from utils once utils has it
 -   setting for restore previous visibility check when switching to tool: never/always/only on tokens
--   Rename permissiveness to permeability in code
+-   Rename permissiveness to permeability or cover factor in code
+-   switch edit menu so full cover is on the right
+-   check image bounding boxes for rotated images
 
 ## License
 
