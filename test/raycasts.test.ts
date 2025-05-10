@@ -12,7 +12,7 @@ describe("raycastSingle", () => {
     const NO_WALLS: Pick<PlayerStorage, "walls"> = {
         walls: {
             lastModified: 0,
-            lastIdSetSize: 0,
+            lastWallCount: 0,
             geometry: multiLineString([]),
         },
     };
