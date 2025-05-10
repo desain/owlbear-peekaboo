@@ -32,7 +32,17 @@ You can switch between private and public measuring modes - the private mode is 
 
 For the GM, the tool also has a mode for creating partial cover. With this mode active, you can click on lines, polygons, and shapes in the map to turn them into partial cover (or click again to unmark them). You can also click on the map to draw a partial cover polygon yourself.
 
-Lines that pass through partial cover count as half a line for determining the number of unobstructed vision lines that reach a target. For example, if 4 vision lines to a target pass through a partial cover, the target will have the same cover as if 2 lines were unobstructed and 2 were obstructed.
+#### Editing Partial Cover
+
+When you right-click on a partial cover object (or select multiple and right-click), a context menu will appear with a slider labeled with a percentage (e.g., "60% permeable").
+
+-   If you select multiple partial cover objects with different permissiveness values, the slider will show the average value and indicate "Mixed".
+-   The slider will appear red if the selected objects have mixed values.
+-   Drag or click the slider to set the same permissiveness value for all selected items.
+-   The permissiveness value controls how much the cover reduces visibility (0% = solid wall, 100% = fully permeable).
+-   You can also remove the partial cover status from selected items using the Remove button in the menu.
+
+Lines that pass through partial cover are multiplied by the cover's permeability for the purpose of counting the number of unobstructed vision lines that reach a target. For example, if 4 vision lines to a target pass through a 50% permeable partial cover, the target will have the same cover as if 2 lines were fully unobstructed and 2 were obstructed.
 
 ### Removing measurements
 
@@ -84,8 +94,6 @@ To make a production build run:
 
 -   two sets of lines, white until the stop point, red/yellow after
 -   Combine walls? https://turfjs.org/docs/api/combine
--   Figure out how to set different types of partial cover (3/4, etc)
-    -   Context menu on partial cover?
 -   Paths as cover - context menu turns them into line strings, like [dynamic fog](https://github.com/owlbear-rodeo/dynamic-fog/blob/main/src/background/util/PathHelpers.ts)
 -   Cleanup shouldn't destroy active measurements. only destroys others public measurements if called by gm. resets tool start and end
 -   take color input from utils once utils has it

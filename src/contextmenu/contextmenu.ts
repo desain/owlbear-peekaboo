@@ -2,11 +2,12 @@ import OBR from "@owlbear-rodeo/sdk";
 import woodenFence from "../../assets/wooden-fence.svg";
 import {
     ID_CONTEXT_MENU_CONVERT,
-    ID_CONTEXT_MENU_REMOVE,
+    ID_CONTEXT_MENU_REMOVE as ID_CONTEXT_MENU_EDIT,
     METADATA_KEY_PERMISSIVENESS,
     STYLE_PARTIAL_COVER,
 } from "../constants";
 import {
+    isCover,
     isCoverCandidate,
     KEY_FILTER_COVER,
     KEY_FILTER_NON_COVER,
@@ -39,37 +40,43 @@ function installContextMenu() {
                 label: "Make Partial Cover",
                 filter: {
                     roles: ["GM"],
+                    // allow selecting multiple types of cover with multiple filters
+                    // so use the 'some' specifier
+                    // this means that some selected items may not be cover candidates
                     some: [...filter, ...KEY_FILTER_NON_COVER],
                 },
             })),
             onClick: (context) =>
                 OBR.scene.items.updateItems(context.items, (items) =>
-                    items.filter(isCoverCandidate).forEach((item) => {
-                        item.visible = false;
-                        item.locked = true;
-                        item.metadata[METADATA_KEY_PERMISSIVENESS] = 0.5;
-                        item.style = { ...item.style, ...STYLE_PARTIAL_COVER };
+                    items.forEach((item) => {
+                        if (isCoverCandidate(item) && !isCover(item)) {
+                            item.visible = false;
+                            item.locked = true;
+                            item.metadata[METADATA_KEY_PERMISSIVENESS] = 0.5;
+                            item.style = {
+                                ...item.style,
+                                ...STYLE_PARTIAL_COVER,
+                            };
+                        }
                     }),
                 ),
         }),
         OBR.contextMenu.create({
-            id: ID_CONTEXT_MENU_REMOVE,
+            id: ID_CONTEXT_MENU_EDIT,
             icons: [
                 {
                     icon: woodenFence,
-                    label: "Remove Partial Cover",
+                    label: "Edit Partial Cover",
                     filter: {
                         roles: ["GM"],
-                        some: KEY_FILTER_COVER,
+                        every: KEY_FILTER_COVER,
                     },
                 },
             ],
-            onClick: (context) =>
-                OBR.scene.items.updateItems(context.items, (items) =>
-                    items.filter(isCoverCandidate).forEach((item) => {
-                        delete item.metadata[METADATA_KEY_PERMISSIVENESS];
-                    }),
-                ),
+            embed: {
+                url: "/src/contextmenu/contextMenuEmbed.html",
+                height: 100,
+            },
         }),
     ]);
 }
@@ -77,6 +84,6 @@ function installContextMenu() {
 function uninstallContextMenu() {
     return Promise.all([
         OBR.contextMenu.remove(ID_CONTEXT_MENU_CONVERT),
-        OBR.contextMenu.remove(ID_CONTEXT_MENU_REMOVE),
+        OBR.contextMenu.remove(ID_CONTEXT_MENU_EDIT),
     ]);
 }
