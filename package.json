@@ -41,6 +41,7 @@
     "owlbear-utils": "git+https://github.com/desain/owlbear-utils.git",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "simplify-js": "^1.2.4",
     "zustand": "^5.0.4"
   }
 }

@@ -1,5 +1,5 @@
 import { type Vector2 } from "@owlbear-rodeo/sdk";
-import { lineString } from "@turf/helpers";
+import { lineString, multiLineString } from "@turf/helpers";
 import { lineIntersect } from "@turf/line-intersect";
 import { matrixMultiply } from "owlbear-utils";
 import { SOLIDITY_NO_COVER } from "../constants";
@@ -10,7 +10,7 @@ import {
     vector2ToPosition,
 } from "../state/raycastCoverTypes";
 import type { PlayerStorage } from "../state/usePlayerStorage";
-import { vector2Equals } from "../utils";
+import { vector2Equals } from "../utils/utils";
 
 /**
  * Find intercepts with a unit circle centered on the origin.
@@ -138,8 +138,8 @@ export function raycastSingle(
             ({ id, worldPoints }) =>
                 [
                     id,
-                    lineString(
-                        worldPoints.map(vector2ToPosition),
+                    multiLineString(
+                        [worldPoints.map(vector2ToPosition)],
                         tokenCoverProperties,
                     ),
                 ] as const,

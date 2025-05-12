@@ -2,7 +2,7 @@ import type { Vector2 } from "@owlbear-rodeo/sdk";
 import OBR, { Math2 } from "@owlbear-rodeo/sdk";
 import { isObject, isVector2 } from "owlbear-utils";
 import { usePlayerStorage } from "../state/usePlayerStorage";
-import { boundingBoxContains, snapToCenter, vector2Equals } from "../utils";
+import { snapToCenter, vector2Equals } from "../utils/utils";
 
 export interface LocationPin {
     readonly position: Vector2;
@@ -83,14 +83,15 @@ export async function movePin(
     }
 
     const boundingBoxes = usePlayerStorage.getState().characterBoundingPolygons;
-    const targetToken = boundingBoxes.find(([, boundingBox]) =>
-        boundingBoxContains(newPosition, boundingBox),
+    const targetToken = boundingBoxes.find(({ worldPoints }) =>
+        Math2.pointInPolygon(newPosition, worldPoints),
     );
     if (targetToken) {
-        const [targetId, { center }] = targetToken;
+        const { id, worldPoints } = targetToken;
+        const center = Math2.centroid(worldPoints);
         return [
             {
-                id: targetId,
+                id,
                 cachedPosition: center,
                 offset: Math2.subtract(newPosition, center),
             } satisfies TokenPin,

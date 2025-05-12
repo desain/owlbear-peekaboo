@@ -27,7 +27,7 @@ import {
     METADATA_KEY_TOOL_PEN_ENABLED,
 } from "../constants";
 import { isCover } from "../coverTypes";
-import { getPartialCoverColor, updatePartialCoverStyle } from "../utils";
+import { getPartialCoverColor, updatePartialCoverStyle } from "../utils/utils";
 
 function makePreviewLine(start: Vector2, end: Vector2): Line {
     const line = buildLine()

@@ -1,7 +1,7 @@
 import type { Vector2 } from "@owlbear-rodeo/sdk";
 import { COLOR_BACKUP, SOLIDITY_FULL_COVER } from "../constants";
 import { usePlayerStorage } from "../state/usePlayerStorage";
-import { getPartialCoverColor } from "../utils";
+import { getPartialCoverColor } from "../utils/utils";
 import { getGridCorners } from "./gridUtils";
 import type { Pin } from "./Pin";
 import { getPinId, getPinLocation } from "./Pin";

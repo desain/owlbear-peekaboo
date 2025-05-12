@@ -2,21 +2,24 @@ import type { Matrix } from "@owlbear-rodeo/sdk";
 import {
     type Vector2,
     type Wall,
+    isCurve,
     isLine,
+    isPath,
     isShape,
     MathM,
 } from "@owlbear-rodeo/sdk";
-import { lineString } from "@turf/helpers";
-import type { Feature, LineString, Position } from "geojson";
+import { multiLineString } from "@turf/helpers";
+import type { Feature, MultiLineString, Position } from "geojson";
 import { isObject } from "owlbear-utils";
 import { METADATA_KEY_SOLIDITY } from "../constants";
-import { type Cover, isCoverPolygon } from "../coverTypes";
+import { type Cover } from "../coverTypes";
 import {
+    getCurveWallWorldPoints,
     getLineWorldPoints,
+    getPathWorldPoints,
     getShapeWorldPoints,
-    getWorldPoints,
     isNonCircleShape,
-} from "../utils";
+} from "../utils/utils";
 
 export interface CoverProperties {
     /**
@@ -35,7 +38,7 @@ function isCoverProperties(properties: unknown): properties is CoverProperties {
     );
 }
 
-type RaycastLineString = Feature<LineString, CoverProperties>;
+type RaycastLineString = Feature<MultiLineString, CoverProperties>;
 interface RaycastCircle {
     properties: CoverProperties;
     /**
@@ -80,7 +83,7 @@ export function getWallPositions(wall: Readonly<Wall>): Position[] {
     if (wall.points.length < 2) {
         throw new Error("Invalid wall: " + JSON.stringify(wall));
     }
-    return getWorldPoints(wall).map(vector2ToPosition);
+    return getCurveWallWorldPoints(wall).map(vector2ToPosition);
 }
 
 // export function boundingBoxToLineString(
@@ -102,20 +105,21 @@ export function getRaycastCover(cover: Cover): RaycastCover {
     const properties: CoverProperties = {
         solidity: cover.metadata[METADATA_KEY_SOLIDITY],
     };
-    let points: Vector2[];
-    if (isCoverPolygon(cover)) {
-        points = getWorldPoints(cover);
+    let points: Vector2[][];
+    if (isCurve(cover)) {
+        const worldPoints = getCurveWallWorldPoints(cover);
         // OBR polygons auto-close, so add a final line back
         // to the starting point.
-        points.push(points[0]!);
+        worldPoints.push(worldPoints[0]!);
+        points = [worldPoints];
     } else if (isLine(cover)) {
-        points = getLineWorldPoints(cover);
+        points = [getLineWorldPoints(cover)];
     } else if (isShape(cover)) {
         if (isNonCircleShape(cover)) {
-            points = getShapeWorldPoints(cover);
-            // World points, so add a final line back
-            // to the starting point.
-            points.push(points[0]!);
+            const worldPoints = getShapeWorldPoints(cover);
+            worldPoints.push(worldPoints[0]!);
+            // Add a final line back to the starting point.
+            points = [worldPoints];
         } else {
             const transform = MathM.multiply(
                 MathM.fromItem(cover),
@@ -130,9 +134,29 @@ export function getRaycastCover(cover: Cover): RaycastCover {
                 inverseTransformCache: MathM.inverse(transform),
             } satisfies RaycastCircle;
         }
+    } else if (isPath(cover)) {
+        points = getPathWorldPoints(cover);
+        // debugDrawPoints(points);
     } else {
         throw new Error("Should be unreachable - unknown cover type");
     }
 
-    return lineString(points.map(vector2ToPosition), properties);
+    return multiLineString(
+        points.map((string) => string.map(vector2ToPosition)),
+        properties,
+    );
 }
+
+// function debugDrawPoints(points: Vector2[]) {
+//     void OBR.scene.local.addItems(
+//         points.map((point) =>
+//             buildShape()
+//                 .shapeType("CIRCLE")
+//                 .width(10)
+//                 .height(10)
+//                 .layer("CONTROL")
+//                 .position(point)
+//                 .build(),
+//         ),
+//     );
+// }

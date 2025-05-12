@@ -21,7 +21,7 @@ import {
     METADATA_KEY_TOOL_MEASURE_PRIVATE,
 } from "../constants";
 import { usePlayerStorage } from "../state/usePlayerStorage";
-import { snapToCenter } from "../utils";
+import { snapToCenter } from "../utils/utils";
 import type { ControlItems } from "./ControlItems";
 import {
     fixControlItems,

@@ -10,7 +10,7 @@ import {
     SOLIDITY_NO_COVER,
 } from "../constants";
 import { isCover, type CoverCandidate } from "../coverTypes";
-import { updatePartialCoverStyle } from "../utils";
+import { updatePartialCoverStyle } from "../utils/utils";
 
 const SoliditySlider: React.FC<{
     value: number;

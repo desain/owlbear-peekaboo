@@ -3,6 +3,7 @@ import type {
     Curve,
     Image,
     Line,
+    Path,
     Shape,
     ShapeType,
     Vector2,
@@ -20,8 +21,10 @@ import {
     type HexColor,
     type RgbColor,
 } from "owlbear-utils";
-import { METADATA_KEY_SOLIDITY } from "./constants";
-import type { Cover } from "./coverTypes";
+import simplify from "simplify-js";
+import { METADATA_KEY_SOLIDITY } from "../constants";
+import type { Cover } from "../coverTypes";
+import { parseSubpath } from "./bezierUtils";
 
 export function boundingBoxContains(
     point: Vector2,
@@ -57,7 +60,7 @@ export function getHexagonPoints(radius: number, angleOffset = 0): Vector2[] {
     });
 }
 
-export function getWorldPoints(curve: Curve | Wall): Vector2[] {
+export function getCurveWallWorldPoints(curve: Curve | Wall): Vector2[] {
     const transform = MathM.fromItem(curve);
     return curve.points.map((point) => matrixMultiply(transform, point));
 }
@@ -134,6 +137,23 @@ export function getImageWorldPoints(item: Image, grid: GridParams): Vector2[] {
         matrixMultiply(
             transform,
             Math2.multiply(Math2.subtract(point, item.grid.offset), dpiScaling),
+        ),
+    );
+}
+
+export function getPathWorldPoints(path: Path): Vector2[][] {
+    const lineStrings: Vector2[][] = [];
+    let idx = 0;
+    while (idx < path.commands.length) {
+        const [points, newIdx] = parseSubpath(path.commands, idx);
+        lineStrings.push(points);
+        idx = newIdx;
+    }
+
+    const transform = MathM.fromItem(path);
+    return lineStrings.map((lineString) =>
+        simplify(lineString, 5.0).map((point) =>
+            matrixMultiply(transform, point),
         ),
     );
 }

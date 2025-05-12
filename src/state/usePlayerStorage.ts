@@ -19,7 +19,7 @@ import {
 } from "../constants";
 import { isCover } from "../coverTypes";
 import { isToken } from "../Token";
-import { getImageWorldPoints } from "../utils";
+import { getImageWorldPoints } from "../utils/utils";
 import {
     getRaycastCover,
     getWallPositions,

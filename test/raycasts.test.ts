@@ -1,5 +1,6 @@
-import type { Vector2 } from "@owlbear-rodeo/sdk";
-import { lineString, multiLineString } from "@turf/helpers";
+import { Command, type Vector2 } from "@owlbear-rodeo/sdk";
+import { multiLineString } from "@turf/helpers";
+import { ORIGIN } from "owlbear-utils";
 import { describe, expect, it } from "vitest";
 import { METADATA_KEY_SOLIDITY, SOLIDITY_NO_COVER } from "../src/constants";
 import type { Cover } from "../src/coverTypes";
@@ -34,7 +35,7 @@ describe("raycastSingle", () => {
             MOCK_ID,
             {
                 lastModified: "",
-                raycastCover: lineString(points.map(vector2ToPosition), {
+                raycastCover: multiLineString([points.map(vector2ToPosition)], {
                     solidity,
                 }),
             },
@@ -309,5 +310,40 @@ describe("raycastSingle", () => {
         const result = raycastSingle(state, start, end);
 
         expect(result).toEqual(MOCK_CHARACTER_SOLIDITY);
+    });
+
+    it("Should intersect path quads", () => {
+        const state = {
+            ...EMPTY_MAP,
+            partialCover: new Map([
+                // Hump above a line from origin to x=10
+                [
+                    MOCK_ID,
+                    {
+                        lastModified: "",
+                        raycastCover: getRaycastCover({
+                            type: "PATH",
+                            position: ORIGIN,
+                            rotation: 0,
+                            scale: { x: 1, y: 1 },
+                            commands: [
+                                [Command.MOVE, 0, 0],
+                                [Command.QUAD, 5, -10, 10, 0],
+                                [Command.CLOSE],
+                            ],
+                            metadata: {
+                                [METADATA_KEY_SOLIDITY]: 0.5,
+                            },
+                        } as Cover),
+                    },
+                ],
+            ]),
+        };
+
+        const start = { x: 0, y: -1 };
+        const end = { x: 10, y: -1 };
+        const result = raycastSingle(state, start, end);
+
+        expect(result).toEqual(0.5);
     });
 });

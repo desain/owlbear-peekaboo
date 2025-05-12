@@ -1,5 +1,12 @@
-import type { Curve, Item, KeyFilter, Line, Shape } from "@owlbear-rodeo/sdk";
-import { isCurve, isLine, isShape } from "@owlbear-rodeo/sdk";
+import type {
+    Curve,
+    Item,
+    KeyFilter,
+    Line,
+    Path,
+    Shape,
+} from "@owlbear-rodeo/sdk";
+import { isCurve, isLine, isPath, isShape } from "@owlbear-rodeo/sdk";
 import type { HasParameterizedMetadata } from "owlbear-utils";
 import { METADATA_KEY_IS_CONTROL, METADATA_KEY_SOLIDITY } from "./constants";
 
@@ -7,7 +14,7 @@ import { METADATA_KEY_IS_CONTROL, METADATA_KEY_SOLIDITY } from "./constants";
 
 const SMOKE_AND_SPECTRE_IS_VISION_LINE = "com.battle-system.smoke/isVisionLine";
 
-export type CoverCandidate = (Curve | Shape | Line) &
+export type CoverCandidate = (Curve | Shape | Line | Path) &
     HasParameterizedMetadata<typeof METADATA_KEY_SOLIDITY, number | undefined> &
     HasParameterizedMetadata<
         typeof METADATA_KEY_IS_CONTROL,
@@ -20,7 +27,7 @@ export type CoverCandidate = (Curve | Shape | Line) &
 
 export function isCoverCandidate(item: Item): item is CoverCandidate {
     return (
-        (isCurve(item) || isShape(item) || isLine(item)) &&
+        (isCurve(item) || isShape(item) || isLine(item) || isPath(item)) &&
         (!(METADATA_KEY_SOLIDITY in item.metadata) ||
             typeof item.metadata[METADATA_KEY_SOLIDITY] === "number") &&
         (!(METADATA_KEY_IS_CONTROL in item.metadata) ||
@@ -66,14 +73,7 @@ export const KEY_FILTER_COVER: KeyFilter[] = [
     },
 ];
 
-// POLYGONS
-
-export type CoverPolygonCandidate = Curve & {
-    style: {
-        tension: 0;
-    };
-} & CoverCandidate;
-const KEY_FILTER_COVER_POLYGON_CANDIDATE: KeyFilter[] = [
+const KEY_FILTER_COVER_CURVE_CANDIDATE: KeyFilter[] = [
     ...KEY_FILTER_COVER_CANDIDATE,
     {
         key: "type",
@@ -84,11 +84,6 @@ const KEY_FILTER_COVER_POLYGON_CANDIDATE: KeyFilter[] = [
         value: 0,
     },
 ];
-
-export type CoverPolygon = CoverPolygonCandidate & Cover;
-export function isCoverPolygon(curve: Item): curve is CoverPolygon {
-    return isCurve(curve) && curve.style.tension === 0 && isCover(curve);
-}
 
 // LINES AND SHAPES
 
@@ -108,10 +103,19 @@ const KEY_FILTER_COVER_SHAPE_CANDIDATE: KeyFilter[] = [
     },
 ];
 
+const KEY_FILTER_COVER_PATH_CANDIDATE: KeyFilter[] = [
+    ...KEY_FILTER_COVER_CANDIDATE,
+    {
+        key: "type",
+        value: "PATH",
+    },
+];
+
 // FILTERS
 
 export const KEY_FILTERS_COVER_CANDIDATES: KeyFilter[][] = [
     KEY_FILTER_COVER_LINE_CANDIDATE,
-    KEY_FILTER_COVER_POLYGON_CANDIDATE,
+    KEY_FILTER_COVER_CURVE_CANDIDATE,
     KEY_FILTER_COVER_SHAPE_CANDIDATE,
+    KEY_FILTER_COVER_PATH_CANDIDATE,
 ];

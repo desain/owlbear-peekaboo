@@ -15,7 +15,7 @@ import {
     KEY_FILTERS_COVER_CANDIDATES,
 } from "../coverTypes";
 import { usePlayerStorage } from "../state/usePlayerStorage";
-import { updatePartialCoverStyle } from "../utils";
+import { updatePartialCoverStyle } from "../utils/utils";
 
 export async function startWatchingContextMenuEnabled(): Promise<VoidFunction> {
     if (usePlayerStorage.getState().contextMenuEnabled) {

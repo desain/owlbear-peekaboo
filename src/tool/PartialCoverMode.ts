@@ -38,11 +38,11 @@ import { usePlayerStorage } from "../state/usePlayerStorage";
 import type { Token } from "../Token";
 import { isToken } from "../Token";
 import {
+    getCurveWallWorldPoints,
     getLineWorldPoints,
     getShapeWorldPoints,
-    getWorldPoints,
     isNonCircleShape,
-} from "../utils";
+} from "../utils/utils";
 
 const ROLES: Role[] = ["GM"];
 
@@ -71,7 +71,7 @@ function getIconSource(item: CoverCandidate, hoverState?: HoverState): string {
 
 function getIconPosition(item: CoverCandidate): Vector2 {
     if (isCurve(item)) {
-        return Math2.centroid(getWorldPoints(item));
+        return Math2.centroid(getCurveWallWorldPoints(item));
     } else if (isLine(item)) {
         return Math2.centroid(getLineWorldPoints(item));
     } else if (isShape(item)) {
