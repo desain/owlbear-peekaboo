@@ -82,7 +82,7 @@ export async function movePin(
         return [oldPin, false, cellCenter];
     }
 
-    const boundingBoxes = usePlayerStorage.getState().characterBoundingBoxes;
+    const boundingBoxes = usePlayerStorage.getState().characterBoundingPolygons;
     const targetToken = boundingBoxes.find(([, boundingBox]) =>
         boundingBoxContains(newPosition, boundingBox),
     );

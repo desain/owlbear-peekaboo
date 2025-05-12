@@ -7,6 +7,7 @@ import {
     type RaycastCover,
     isRaycastCircle,
     positionToVector2,
+    vector2ToPosition,
 } from "../state/raycastCoverTypes";
 import type { PlayerStorage } from "../state/usePlayerStorage";
 import { vector2Equals } from "../utils";
@@ -74,7 +75,15 @@ function intersect(
  *         was partially blocked. Solidity 0 means unblocked, 1 means blocked.
  */
 export function raycastSingle(
-    state: Readonly<Pick<PlayerStorage, "walls" | "partialCover">>,
+    state: Readonly<
+        Pick<
+            PlayerStorage,
+            | "walls"
+            | "partialCover"
+            | "characterBoundingPolygons"
+            | "roomMetadata"
+        >
+    >,
     start: Readonly<Vector2>,
     end: Readonly<Vector2>,
     /**
@@ -117,15 +126,27 @@ export function raycastSingle(
     }
 
     // Check for partial cover
-    return state.partialCover.reduce((highestSolidity, cover) => {
+    const tokenCoverProperties = {
+        solidity: state.roomMetadata.characterSolidity,
+    };
+    return [
+        ...[...state.partialCover.entries()].map(
+            ([id, { raycastCover }]) => [id, raycastCover] as const,
+        ),
+        // TODO: make this empty if character solidity = 0 to avoid extraneous checks
+        ...state.characterBoundingPolygons.map(
+            ({ id, worldPoints }) =>
+                [
+                    id,
+                    lineString(
+                        worldPoints.map(vector2ToPosition),
+                        tokenCoverProperties,
+                    ),
+                ] as const,
+        ),
+    ].reduce((highestSolidity, [id, cover]) => {
         // Skip cover corresponding to the origin or destination
-        const isOriginOrDestination =
-            (originId !== undefined &&
-                cover.properties.characterId === originId) ||
-            (destinationId !== undefined &&
-                cover.properties.characterId === destinationId);
-
-        if (!isOriginOrDestination) {
+        if (id !== originId && id !== destinationId) {
             // Filter out intersections that are exactly at the origin or end
             const intersections = intersect(start, end, cover).filter(
                 (intersection) =>

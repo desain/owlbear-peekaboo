@@ -1,44 +1,66 @@
+import type { Vector2 } from "@owlbear-rodeo/sdk";
 import { lineString, multiLineString } from "@turf/helpers";
 import { describe, expect, it } from "vitest";
 import { METADATA_KEY_SOLIDITY, SOLIDITY_NO_COVER } from "../src/constants";
 import type { Cover } from "../src/coverTypes";
-import { getRaycastCover } from "../src/state/raycastCoverTypes";
+import {
+    getRaycastCover,
+    vector2ToPosition,
+} from "../src/state/raycastCoverTypes";
+import type { RoomMetadata } from "../src/state/roomMetadata";
 import type { PlayerStorage } from "../src/state/usePlayerStorage";
 import { raycastSingle } from "../src/tool/raycastSingle";
 
 describe("raycastSingle", () => {
     const MOCK_ID = "mock-id";
-
-    const NO_WALLS: Pick<PlayerStorage, "walls"> = {
+    const MOCK_CHARACTER_SOLIDITY = 0.12345;
+    const EMPTY_MAP: Pick<
+        PlayerStorage,
+        "walls" | "partialCover" | "characterBoundingPolygons" | "roomMetadata"
+    > = {
         walls: {
             lastModified: 0,
             lastWallCount: 0,
             geometry: multiLineString([]),
         },
+        partialCover: new Map(),
+        characterBoundingPolygons: [],
+        roomMetadata: {
+            characterSolidity: MOCK_CHARACTER_SOLIDITY,
+        } as RoomMetadata,
     };
-    const SQUARE_TOP_RIGHT_OF_ORIGIN: Pick<PlayerStorage, "partialCover"> = {
-        partialCover: [
-            // Square to the top right of the origin
-            lineString(
-                [
-                    [0, -150],
-                    [150, -150],
-                    [150, 0],
-                    [0, 0],
-                    [0, -150],
-                ],
-                {
-                    characterId: MOCK_ID,
-                    solidity: 0.5,
-                },
-            ),
-        ],
+    function makeMockPartialCover(points: Vector2[], solidity = 0.5) {
+        return [
+            MOCK_ID,
+            {
+                lastModified: "",
+                raycastCover: lineString(points.map(vector2ToPosition), {
+                    solidity,
+                }),
+            },
+        ] as const;
+    }
+
+    const SQUARE_TOP_RIGHT_OF_ORIGIN_POINTS = [
+        { x: 0, y: -150 },
+        { x: 150, y: -150 },
+        { x: 150, y: 0 },
+        { x: 0, y: 0 },
+        { x: 0, y: -150 },
+    ];
+    const STATE_SQUARE_TOP_RIGHT_OF_ORIGIN: Pick<
+        PlayerStorage,
+        "partialCover"
+    > = {
+        partialCover: new Map([
+            makeMockPartialCover(SQUARE_TOP_RIGHT_OF_ORIGIN_POINTS),
+        ]),
     };
 
     it("Shouldn't self-interfere", () => {
         const state: PlayerStorage = {
-            ...NO_WALLS,
-            ...SQUARE_TOP_RIGHT_OF_ORIGIN,
+            ...EMPTY_MAP,
+            ...STATE_SQUARE_TOP_RIGHT_OF_ORIGIN,
         } as PlayerStorage;
 
         // start in the center and go straight right, through the square
@@ -51,8 +73,8 @@ describe("raycastSingle", () => {
 
     it("Shouldn't let the destination interfere", () => {
         const state: PlayerStorage = {
-            ...NO_WALLS,
-            ...SQUARE_TOP_RIGHT_OF_ORIGIN,
+            ...EMPTY_MAP,
+            ...STATE_SQUARE_TOP_RIGHT_OF_ORIGIN,
         } as PlayerStorage;
 
         // start from outside the square and go in
@@ -65,8 +87,8 @@ describe("raycastSingle", () => {
 
     it("Shouldn't return cover for start-adjacent objects", () => {
         const state = {
-            ...NO_WALLS,
-            ...SQUARE_TOP_RIGHT_OF_ORIGIN,
+            ...EMPTY_MAP,
+            ...STATE_SQUARE_TOP_RIGHT_OF_ORIGIN,
         };
 
         // Go from origin to the left
@@ -79,8 +101,8 @@ describe("raycastSingle", () => {
 
     it("Shouldn't return cover for end-adjacent objects", () => {
         const state = {
-            ...NO_WALLS,
-            ...SQUARE_TOP_RIGHT_OF_ORIGIN,
+            ...EMPTY_MAP,
+            ...STATE_SQUARE_TOP_RIGHT_OF_ORIGIN,
         };
 
         // Come in from the top left of the origin - shouldn't hit anything
@@ -93,8 +115,8 @@ describe("raycastSingle", () => {
 
     it("Shouldn't return cover for both start and end-adjacent objects", () => {
         const state = {
-            ...NO_WALLS,
-            ...SQUARE_TOP_RIGHT_OF_ORIGIN,
+            ...EMPTY_MAP,
+            ...STATE_SQUARE_TOP_RIGHT_OF_ORIGIN,
         };
 
         // Cross the square
@@ -107,6 +129,7 @@ describe("raycastSingle", () => {
 
     it("Should return intersections", () => {
         const state = {
+            ...EMPTY_MAP,
             walls: {
                 lastModified: 0,
                 lastWallCount: 0,
@@ -120,7 +143,6 @@ describe("raycastSingle", () => {
                     ],
                 ]),
             },
-            partialCover: [],
         };
 
         const start = { x: -75, y: -225 };
@@ -140,21 +162,27 @@ describe("raycastSingle", () => {
 
     it("Should intersect circles", () => {
         const state = {
-            ...NO_WALLS,
-            partialCover: [
-                getRaycastCover({
-                    type: "SHAPE",
-                    shapeType: "CIRCLE",
-                    position: { x: 0, y: 0 },
-                    rotation: 0,
-                    scale: { x: 1, y: 1 },
-                    width: 10,
-                    height: 10,
-                    metadata: {
-                        [METADATA_KEY_SOLIDITY]: 0.5,
+            ...EMPTY_MAP,
+            partialCover: new Map([
+                [
+                    MOCK_ID,
+                    {
+                        lastModified: "",
+                        raycastCover: getRaycastCover({
+                            type: "SHAPE",
+                            shapeType: "CIRCLE",
+                            position: { x: 0, y: 0 },
+                            rotation: 0,
+                            scale: { x: 1, y: 1 },
+                            width: 10,
+                            height: 10,
+                            metadata: {
+                                [METADATA_KEY_SOLIDITY]: 0.5,
+                            },
+                        } as Cover),
                     },
-                } as Cover),
-            ],
+                ],
+            ]),
         };
 
         const start = { x: -20, y: 0 };
@@ -166,23 +194,30 @@ describe("raycastSingle", () => {
 
     it("Should pass over top of wide-scaled ovals", () => {
         const state = {
-            ...NO_WALLS,
-            partialCover: [
-                // oval that extends from -10 to 10 on the x axis
-                // but only -5 to 5 on the y axis
-                getRaycastCover({
-                    type: "SHAPE",
-                    shapeType: "CIRCLE",
-                    position: { x: 0, y: 0 },
-                    rotation: 0,
-                    scale: { x: 2, y: 1 },
-                    width: 10,
-                    height: 10,
-                    metadata: {
-                        [METADATA_KEY_SOLIDITY]: 0.5,
+            ...EMPTY_MAP,
+            partialCover: new Map([
+                [
+                    MOCK_ID,
+                    {
+                        lastModified: "",
+                        raycastCover:
+                            // oval that extends from -10 to 10 on the x axis
+                            // but only -5 to 5 on the y axis
+                            getRaycastCover({
+                                type: "SHAPE",
+                                shapeType: "CIRCLE",
+                                position: { x: 0, y: 0 },
+                                rotation: 0,
+                                scale: { x: 2, y: 1 },
+                                width: 10,
+                                height: 10,
+                                metadata: {
+                                    [METADATA_KEY_SOLIDITY]: 0.5,
+                                },
+                            } as Cover),
                     },
-                } as Cover),
-            ],
+                ],
+            ]),
         };
 
         const start = { x: -20, y: -7 };
@@ -194,23 +229,30 @@ describe("raycastSingle", () => {
 
     it("Should pass over top of wide ovals", () => {
         const state = {
-            ...NO_WALLS,
-            partialCover: [
-                // oval that extends from -10 to 10 on the x axis
-                // but only -5 to 5 on the y axis
-                getRaycastCover({
-                    type: "SHAPE",
-                    shapeType: "CIRCLE",
-                    position: { x: 0, y: 0 },
-                    rotation: 0,
-                    scale: { x: 1, y: 1 },
-                    width: 20,
-                    height: 10,
-                    metadata: {
-                        [METADATA_KEY_SOLIDITY]: 0.5,
+            ...EMPTY_MAP,
+            partialCover: new Map([
+                [
+                    MOCK_ID,
+                    {
+                        lastModified: "",
+                        raycastCover:
+                            // oval that extends from -10 to 10 on the x axis
+                            // but only -5 to 5 on the y axis
+                            getRaycastCover({
+                                type: "SHAPE",
+                                shapeType: "CIRCLE",
+                                position: { x: 0, y: 0 },
+                                rotation: 0,
+                                scale: { x: 1, y: 1 },
+                                width: 20,
+                                height: 10,
+                                metadata: {
+                                    [METADATA_KEY_SOLIDITY]: 0.5,
+                                },
+                            } as Cover),
                     },
-                } as Cover),
-            ],
+                ],
+            ]),
         };
 
         const start = { x: -20, y: -7 };
@@ -222,36 +264,50 @@ describe("raycastSingle", () => {
 
     it("Should only return the most solid when there are multiple partial covers", () => {
         const state = {
-            ...NO_WALLS,
-            partialCover: [
-                // start -> first vertical line -> second vertical line -> end
+            ...EMPTY_MAP,
+            partialCover: new Map([
                 // first line to pass through - should be ignored since low solidity
-                lineString(
+                makeMockPartialCover(
                     [
-                        [5, -10],
-                        [5, 10],
+                        { x: 5, y: -10 },
+                        { x: 5, y: 10 },
                     ],
-                    {
-                        solidity: 0.2,
-                    },
+                    0.2,
                 ),
-                // second line to pass through - should bind
-                lineString(
+                // second vertical line - should bind
+                makeMockPartialCover(
                     [
-                        [10, -10],
-                        [10, 10],
+                        { x: 10, y: -10 },
+                        { x: 10, y: 10 },
                     ],
-                    {
-                        solidity: 0.9,
-                    },
+                    0.9,
                 ),
-            ],
+            ]),
         };
 
+        // start -> first vertical line -> second vertical line -> end
         const start = { x: 0, y: 0 };
         const end = { x: 20, y: 0 };
         const result = raycastSingle(state, start, end);
 
         expect(result).toEqual(0.9);
+    });
+
+    it("Should treat characters as partial cover", () => {
+        const state = {
+            ...EMPTY_MAP,
+            characterBoundingPolygons: [
+                {
+                    id: MOCK_ID,
+                    worldPoints: SQUARE_TOP_RIGHT_OF_ORIGIN_POINTS,
+                },
+            ],
+        };
+
+        const start = { x: -10, y: -10 };
+        const end = { x: 10, y: -10 };
+        const result = raycastSingle(state, start, end);
+
+        expect(result).toEqual(MOCK_CHARACTER_SOLIDITY);
     });
 });

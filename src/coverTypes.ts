@@ -47,9 +47,9 @@ export type Cover = CoverCandidate &
 
 export function isCover(item: Item): item is Cover {
     return (
-        isCoverCandidate(item) &&
         METADATA_KEY_SOLIDITY in item.metadata &&
-        typeof item.metadata[METADATA_KEY_SOLIDITY] === "number"
+        typeof item.metadata[METADATA_KEY_SOLIDITY] === "number" &&
+        isCoverCandidate(item)
     );
 }
 export const KEY_FILTER_NON_COVER: KeyFilter[] = [

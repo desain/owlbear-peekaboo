@@ -20,10 +20,6 @@ import {
 
 export interface CoverProperties {
     /**
-     * If set, the partial cover is a character token.
-     */
-    characterId?: string;
-    /**
      * How much the cover blocks the line line. 0 = no cover, 1 = full cover.
      */
     solidity: number;

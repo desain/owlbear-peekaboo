@@ -1,6 +1,6 @@
-import type { BoundingBox, Item, Metadata, Player } from "@owlbear-rodeo/sdk";
-import OBR, { isWall, Math2 } from "@owlbear-rodeo/sdk";
-import { lineString, multiLineString } from "@turf/helpers";
+import type { Item, Metadata, Player, Vector2 } from "@owlbear-rodeo/sdk";
+import OBR, { isWall } from "@owlbear-rodeo/sdk";
+import { multiLineString } from "@turf/helpers";
 import type { Feature, MultiLineString } from "geojson";
 import { enableMapSet } from "immer";
 import {
@@ -23,7 +23,6 @@ import { getImageWorldPoints } from "../utils";
 import {
     getRaycastCover,
     getWallPositions,
-    vector2ToPosition,
     type RaycastCover,
 } from "./raycastCoverTypes";
 import { isRoomMetadata, type RoomMetadata } from "./roomMetadata";
@@ -73,13 +72,25 @@ interface OwlbearStore {
     readonly playerId: string;
     readonly sceneReady: boolean;
     readonly grid: GridParsed;
-    readonly characterBoundingBoxes: [id: string, box: BoundingBox][];
+    readonly characterBoundingPolygons: {
+        id: string;
+        worldPoints: Vector2[];
+    }[];
     readonly walls: {
         readonly lastModified: number;
         readonly lastWallCount: number;
         readonly geometry: Feature<MultiLineString>;
     };
-    readonly partialCover: RaycastCover[];
+    /**
+     * Maps item ID to partial cover data.
+     */
+    readonly partialCover: Map<
+        string,
+        {
+            lastModified: string;
+            raycastCover: RaycastCover;
+        }
+    >;
     readonly roomMetadata: RoomMetadata;
 
     readonly handlePlayerChange: (
@@ -155,13 +166,13 @@ export const usePlayerStorage = create<PlayerStorage>()(
                         multiplier: 5,
                     },
                 },
-                characterBoundingBoxes: [],
+                characterBoundingPolygons: [],
                 walls: {
                     lastModified: 0,
                     lastWallCount: 0,
                     geometry: multiLineString([]),
                 },
-                partialCover: [],
+                partialCover: new Map(),
                 roomMetadata: {
                     characterSolidity: DEFAULT_SOLIDITY,
 
@@ -220,8 +231,10 @@ export const usePlayerStorage = create<PlayerStorage>()(
                 },
                 updateItems: (items) =>
                     set((state) => {
-                        state.characterBoundingBoxes = [];
-                        state.partialCover = [];
+                        const newCharacterBoundingPolygons: OwlbearStore["characterBoundingPolygons"] =
+                            [];
+                        const newPartialCover: OwlbearStore["partialCover"] =
+                            new Map();
 
                         for (const item of items) {
                             if (isToken(item)) {
@@ -229,25 +242,30 @@ export const usePlayerStorage = create<PlayerStorage>()(
                                     item,
                                     state.grid,
                                 );
-                                state.characterBoundingBoxes.push([
-                                    item.id,
-                                    Math2.boundingBox(worldPoints),
-                                ]);
-                                const worldPositions =
-                                    worldPoints.map(vector2ToPosition);
-                                worldPositions.push(worldPositions[0]!);
-                                state.partialCover.push(
-                                    lineString(worldPositions, {
-                                        characterId: item.id,
-                                        solidity:
-                                            state.roomMetadata
-                                                .characterSolidity,
-                                    }),
-                                );
+                                newCharacterBoundingPolygons.push({
+                                    id: item.id,
+                                    worldPoints,
+                                });
                             } else if (isCover(item)) {
-                                state.partialCover.push(getRaycastCover(item));
+                                const oldEntry = state.partialCover.get(
+                                    item.id,
+                                );
+                                if (
+                                    oldEntry &&
+                                    item.lastModified === oldEntry.lastModified
+                                ) {
+                                    newPartialCover.set(item.id, oldEntry);
+                                } else {
+                                    newPartialCover.set(item.id, {
+                                        lastModified: item.lastModified,
+                                        raycastCover: getRaycastCover(item),
+                                    });
+                                }
                             }
                         }
+                        state.characterBoundingPolygons =
+                            newCharacterBoundingPolygons;
+                        state.partialCover = newPartialCover;
                     }),
                 updateLocalItems: (items) => {
                     const oldWalls = get().walls;
@@ -275,15 +293,7 @@ export const usePlayerStorage = create<PlayerStorage>()(
                 handleRoomMetadataChange: (metadata: Metadata) => {
                     const roomMetadata = metadata[METADATA_KEY_ROOM_METADATA];
                     if (isRoomMetadata(roomMetadata)) {
-                        set((state) => {
-                            state.roomMetadata = roomMetadata;
-                            for (const partialCover of state.partialCover) {
-                                if (partialCover.properties.characterId) {
-                                    partialCover.properties.solidity =
-                                        roomMetadata.characterSolidity;
-                                }
-                            }
-                        });
+                        set({ roomMetadata });
                     }
                 },
             })),
