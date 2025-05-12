@@ -95,7 +95,7 @@ To make a production build run:
 ## To do
 
 -   two sets of lines, white until the stop point, red/yellow after
--   Paths as cover - context menu turns them into line strings, like [dynamic fog](https://github.com/owlbear-rodeo/dynamic-fog/blob/main/src/background/util/PathHelpers.ts)
+-   Paths as cover - context menu turns them into line strings, like [dynamic fog](https://github.com/owlbear-rodeo/dynamic-fog/blob/main/src/background/util/PathHelpers.ts) or [smoke and spectre](https://github.com/ManuelLovell/smoke/blob/87a5472f83d396060fe7b41e59fdd090228f75b8/src/utilities/bsUtilities.ts#L228)
 -   take color input from utils once utils has it
 -   setting for restore previous visibility check when switching to tool: never/always/only on tokens
 
