@@ -6,6 +6,7 @@ import {
     isLine,
     isPath,
     isShape,
+    Math2,
     MathM,
 } from "@owlbear-rodeo/sdk";
 import { multiLineString } from "@turf/helpers";
@@ -20,6 +21,7 @@ import {
     getShapeWorldPoints,
     isNonCircleShape,
 } from "../utils/utils";
+import type { CharacterBoundingPolygon } from "./usePlayerStorage";
 
 export interface CoverProperties {
     /**
@@ -31,7 +33,7 @@ function isCoverProperties(properties: unknown): properties is CoverProperties {
     return (
         isObject(properties) &&
         "solidity" in properties &&
-        typeof properties.solidity === "number";
+        typeof properties.solidity === "number"
     );
 }
 
@@ -83,6 +85,17 @@ export function getWallPositions(wall: Readonly<Wall>): Position[] {
     return getCurveWallWorldPoints(wall).map(vector2ToPosition);
 }
 
+export function characterBoundingPolygonToRaycastCover(
+    { worldPoints }: CharacterBoundingPolygon,
+    tokenCoverProperties: CoverProperties,
+): RaycastCover {
+    const positions = worldPoints.map(vector2ToPosition);
+    if (positions[0]) {
+        positions.push(positions[0]);
+    }
+    return multiLineString([positions], tokenCoverProperties);
+}
+
 // export function boundingBoxToLineString(
 //     box: Readonly<BoundingBox>,
 //     properties: CoverProperties,
@@ -98,22 +111,29 @@ export function getWallPositions(wall: Readonly<Wall>): Position[] {
 //     return lineString(corners, properties);
 // }
 
-export function getRaycastCover(cover: Cover): RaycastCover {
+export function getRaycastCover(
+    cover: Cover,
+): [raycastCover: RaycastCover, centroid: Vector2] {
     const properties: CoverProperties = {
         solidity: cover.metadata[METADATA_KEY_SOLIDITY],
     };
+    let centroid: Vector2;
     let points: Vector2[][];
     if (isCurve(cover)) {
         const worldPoints = getCurveWallWorldPoints(cover);
+        centroid = Math2.centroid(worldPoints);
         // OBR polygons auto-close, so add a final line back
         // to the starting point.
         worldPoints.push(worldPoints[0]!);
         points = [worldPoints];
     } else if (isLine(cover)) {
-        points = [getLineWorldPoints(cover)];
+        const worldPoints = getLineWorldPoints(cover);
+        centroid = Math2.centroid(worldPoints);
+        points = [worldPoints];
     } else if (isShape(cover)) {
         if (isNonCircleShape(cover)) {
             const worldPoints = getShapeWorldPoints(cover);
+            centroid = Math2.centroid(worldPoints);
             worldPoints.push(worldPoints[0]!);
             // Add a final line back to the starting point.
             points = [worldPoints];
@@ -125,23 +145,29 @@ export function getRaycastCover(cover: Cover): RaycastCover {
                     y: cover.height / 2,
                 }),
             );
-            return {
+            const raycastCover = {
                 properties,
                 transform,
                 inverseTransformCache: MathM.inverse(transform),
             } satisfies RaycastCircle;
+            return [raycastCover, cover.position];
         }
     } else if (isPath(cover)) {
         points = getPathWorldPoints(cover);
+        const centroids = points.map((lineString) =>
+            Math2.centroid(lineString),
+        );
+        centroid = Math2.centroid(centroids);
         // debugDrawPoints(points);
     } else {
         throw new Error("Should be unreachable - unknown cover type");
     }
 
-    return multiLineString(
+    const raycastCover = multiLineString(
         points.map((lineString) => lineString.map(vector2ToPosition)),
         properties,
     );
+    return [raycastCover, centroid];
 }
 
 // function debugDrawPoints(points: Vector2[]) {

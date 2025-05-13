@@ -40,7 +40,9 @@ export type ControlItems = [
      */
     highlight: Curve,
     /**
-     * Visibility lines from start to end corners or end center
+     * Visibility lines from start to end corners or end center.
+     * First are the lines to the intersect points, then an equal
+     * number of lines from
      */
     ...lines: Line[],
 ];
@@ -106,10 +108,12 @@ export function makeInteractionItems(
 
     // Determine number of lines based on measureTo setting
     const measureTo = state.measureTo;
-    const numLines = measureTo === "center" ? 1 : state.getGridCornerCount();
+    const numLines =
+        measureTo === "center" ? 2 : state.getGridCornerCount() * 2;
     const lines = Array.from(Array(numLines), () =>
         buildLine()
             .name("Peekaboo Visibility Line")
+            .strokeColor("#ffffff")
             .strokeWidth(10)
             .strokeOpacity(0.6)
             .strokeDash([1, 30])
@@ -152,13 +156,18 @@ export function fixControlItems(
     highlight.style.strokeColor = highlightColor;
 
     // Fix lines
-    lines.forEach((line, i) => {
-        line.startPosition = startPosition;
+    const numPhaseLines = Math.floor(lines.length / 2);
+    for (let i = 0; i < numPhaseLines; i++) {
+        const lineToIntersect = lines[i];
+        const lineFromIntersect = lines[numPhaseLines + i];
         const lineResult = lineResults[i];
-        if (!lineResult) {
-            return;
+        if (!lineToIntersect || !lineFromIntersect || !lineResult) {
+            continue;
         }
-        line.endPosition = lineResult.endPosition;
-        line.style.strokeColor = lineResult.color;
-    });
+        lineToIntersect.startPosition = startPosition;
+        lineToIntersect.endPosition = lineResult.intersectPosition;
+        lineFromIntersect.startPosition = lineResult.intersectPosition;
+        lineFromIntersect.endPosition = lineResult.endPosition;
+        lineFromIntersect.style.strokeColor = lineResult.color;
+    }
 }

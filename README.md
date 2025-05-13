@@ -94,10 +94,9 @@ To make a production build run:
 
 ## To do
 
--   two sets of lines, white until the stop point, red/yellow after
 -   take color input from utils once utils has it
 -   setting for restore previous visibility check when switching to tool: never/always/only on tokens
--   remove character ID from properties typeguard
+-   better icon placement for paths with multiple subpaths
 
 ## License
 

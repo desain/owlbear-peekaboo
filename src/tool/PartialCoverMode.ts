@@ -7,10 +7,6 @@ import type {
 } from "@owlbear-rodeo/sdk";
 import OBR, {
     buildImage,
-    isCurve,
-    isLine,
-    isShape,
-    Math2,
     type Item,
     type ToolContext,
     type ToolEvent,
@@ -37,12 +33,6 @@ import {
 import { usePlayerStorage } from "../state/usePlayerStorage";
 import type { Token } from "../Token";
 import { isToken } from "../Token";
-import {
-    getCurveWallWorldPoints,
-    getLineWorldPoints,
-    getShapeWorldPoints,
-    isNonCircleShape,
-} from "../utils/utils";
 
 const ROLES: Role[] = ["GM"];
 
@@ -70,21 +60,14 @@ function getIconSource(item: CoverCandidate, hoverState?: HoverState): string {
 }
 
 function getIconPosition(item: CoverCandidate): Vector2 {
-    if (isCurve(item)) {
-        return Math2.centroid(getCurveWallWorldPoints(item));
-    } else if (isLine(item)) {
-        return Math2.centroid(getLineWorldPoints(item));
-    } else if (isShape(item)) {
-        if (isNonCircleShape(item) && item.shapeType !== "HEXAGON") {
-            return Math2.centroid(getShapeWorldPoints(item));
-        } else {
-            return item.position;
-        }
+    const centroid = usePlayerStorage
+        .getState()
+        .partialCover.get(item.id)?.centroid;
+    if (centroid) {
+        return centroid;
     } else {
-        console.error(
-            "Unknown cover type, defaulting to icon at item position",
-        );
-        return (item as Item).position;
+        console.error("Unstored cover, defaulting to icon at item position");
+        return item.position;
     }
 }
 

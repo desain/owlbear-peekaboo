@@ -8,13 +8,12 @@ import type {
 } from "@owlbear-rodeo/sdk";
 import OBR, { Math2 } from "@owlbear-rodeo/sdk";
 import type { ItemApi } from "owlbear-utils";
-import eyeTarget from "../../assets/eye-target.svg";
-
 import {
     createLocalInteraction,
     getId,
     wrapRealInteraction,
 } from "owlbear-utils";
+import eyeTarget from "../../assets/eye-target.svg";
 import {
     ID_TOOL,
     ID_TOOL_MODE_VISIBILITY,
@@ -106,7 +105,13 @@ export class VisibilityMode implements ToolMode {
      * State of tool mode.
      */
     #modeState: ModeState = null;
+    /**
+     * Whether the meta key is held down.
+     */
     #metaDown = false;
+    /**
+     * Whether the control key is held down.
+     */
     #controlDown = false;
 
     static readonly #getStart = async (event: ToolEvent): Promise<Pin> => {

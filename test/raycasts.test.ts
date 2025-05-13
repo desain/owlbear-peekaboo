@@ -1,4 +1,4 @@
-import { Command, type Vector2 } from "@owlbear-rodeo/sdk";
+import { Command, Math2, type Vector2 } from "@owlbear-rodeo/sdk";
 import { multiLineString } from "@turf/helpers";
 import { ORIGIN } from "owlbear-utils";
 import { describe, expect, it } from "vitest";
@@ -35,6 +35,7 @@ describe("raycastSingle", () => {
             MOCK_ID,
             {
                 lastModified: "",
+                centroid: Math2.centroid(points),
                 raycastCover: multiLineString([points.map(vector2ToPosition)], {
                     solidity,
                 }),
@@ -68,8 +69,8 @@ describe("raycastSingle", () => {
         const start = { x: 75, y: 75 };
         const end = { x: 200, y: 75 };
 
-        const result = raycastSingle(state, start, end, MOCK_ID);
-        expect(result).toEqual(SOLIDITY_NO_COVER);
+        const [, solidity] = raycastSingle(state, start, end, MOCK_ID);
+        expect(solidity).toEqual(SOLIDITY_NO_COVER);
     });
 
     it("Shouldn't let the destination interfere", () => {
@@ -82,8 +83,14 @@ describe("raycastSingle", () => {
         const start = { x: -75, y: -75 };
         const end = { x: 75, y: 75 };
 
-        const result = raycastSingle(state, start, end, undefined, MOCK_ID);
-        expect(result).toEqual(SOLIDITY_NO_COVER);
+        const [, solidity] = raycastSingle(
+            state,
+            start,
+            end,
+            undefined,
+            MOCK_ID,
+        );
+        expect(solidity).toEqual(SOLIDITY_NO_COVER);
     });
 
     it("Shouldn't return cover for start-adjacent objects", () => {
@@ -96,8 +103,8 @@ describe("raycastSingle", () => {
         const start = { x: 0, y: 0 };
         const end = { x: -10, y: 0 };
 
-        const result = raycastSingle(state, start, end);
-        expect(result).toEqual(SOLIDITY_NO_COVER);
+        const [, solidity] = raycastSingle(state, start, end);
+        expect(solidity).toEqual(SOLIDITY_NO_COVER);
     });
 
     it("Shouldn't return cover for end-adjacent objects", () => {
@@ -110,8 +117,9 @@ describe("raycastSingle", () => {
         const start = { x: -75, y: -75 };
         const end = { x: 0, y: 0 };
 
-        const result = raycastSingle(state, start, end);
-        expect(result).toEqual(SOLIDITY_NO_COVER);
+        const [point, solidity] = raycastSingle(state, start, end);
+        expect(point).toEqual(end);
+        expect(solidity).toEqual(SOLIDITY_NO_COVER);
     });
 
     it("Shouldn't return cover for both start and end-adjacent objects", () => {
@@ -124,8 +132,9 @@ describe("raycastSingle", () => {
         const start = { x: 0, y: 0 };
         const end = { x: 150, y: -150 };
 
-        const result = raycastSingle(state, start, end);
-        expect(result).toEqual(SOLIDITY_NO_COVER);
+        const [point, solidity] = raycastSingle(state, start, end);
+        expect(point).toEqual(end);
+        expect(solidity).toEqual(SOLIDITY_NO_COVER);
     });
 
     it("Should return intersections", () => {
@@ -134,15 +143,18 @@ describe("raycastSingle", () => {
             walls: {
                 lastModified: 0,
                 lastWallCount: 0,
-                geometry: multiLineString([
+                geometry: multiLineString(
                     [
-                        [0, 0],
-                        [0, -300],
-                        [300, -300],
-                        [300, 0],
-                        [0, 0],
+                        [
+                            [0, 0],
+                            [0, -300],
+                            [300, -300],
+                            [300, 0],
+                            [0, 0],
+                        ],
                     ],
-                ]),
+                    { solidity: 1 },
+                ),
             },
         };
 
@@ -156,8 +168,9 @@ describe("raycastSingle", () => {
 
         const results = ends.map((end) => raycastSingle(state, start, end));
 
-        results.forEach((result, i) => {
-            expect(result).not.toEqual(ends[i]);
+        results.forEach(([point, solidity], i) => {
+            expect(point).not.toEqual(ends[i]);
+            expect(solidity).toEqual(1);
         });
     });
 
@@ -169,10 +182,11 @@ describe("raycastSingle", () => {
                     MOCK_ID,
                     {
                         lastModified: "",
+                        centroid: ORIGIN,
                         raycastCover: getRaycastCover({
                             type: "SHAPE",
                             shapeType: "CIRCLE",
-                            position: { x: 0, y: 0 },
+                            position: ORIGIN,
                             rotation: 0,
                             scale: { x: 1, y: 1 },
                             width: 10,
@@ -180,7 +194,7 @@ describe("raycastSingle", () => {
                             metadata: {
                                 [METADATA_KEY_SOLIDITY]: 0.5,
                             },
-                        } as Cover),
+                        } as Cover)[0],
                     },
                 ],
             ]),
@@ -188,9 +202,9 @@ describe("raycastSingle", () => {
 
         const start = { x: -20, y: 0 };
         const end = { x: 0, y: 0 };
-        const result = raycastSingle(state, start, end);
+        const [, solidity] = raycastSingle(state, start, end);
 
-        expect(result).toEqual(0.5);
+        expect(solidity).toEqual(0.5);
     });
 
     it("Should pass over top of wide-scaled ovals", () => {
@@ -201,13 +215,14 @@ describe("raycastSingle", () => {
                     MOCK_ID,
                     {
                         lastModified: "",
+                        centroid: ORIGIN,
                         raycastCover:
                             // oval that extends from -10 to 10 on the x axis
                             // but only -5 to 5 on the y axis
                             getRaycastCover({
                                 type: "SHAPE",
                                 shapeType: "CIRCLE",
-                                position: { x: 0, y: 0 },
+                                position: ORIGIN,
                                 rotation: 0,
                                 scale: { x: 2, y: 1 },
                                 width: 10,
@@ -215,7 +230,7 @@ describe("raycastSingle", () => {
                                 metadata: {
                                     [METADATA_KEY_SOLIDITY]: 0.5,
                                 },
-                            } as Cover),
+                            } as Cover)[0],
                     },
                 ],
             ]),
@@ -223,9 +238,9 @@ describe("raycastSingle", () => {
 
         const start = { x: -20, y: -7 };
         const end = { x: 20, y: -7 };
-        const result = raycastSingle(state, start, end);
-
-        expect(result).toEqual(SOLIDITY_NO_COVER);
+        const [point, solidity] = raycastSingle(state, start, end);
+        expect(point).toEqual(end);
+        expect(solidity).toEqual(SOLIDITY_NO_COVER);
     });
 
     it("Should pass over top of wide ovals", () => {
@@ -236,13 +251,14 @@ describe("raycastSingle", () => {
                     MOCK_ID,
                     {
                         lastModified: "",
+                        centroid: ORIGIN,
                         raycastCover:
                             // oval that extends from -10 to 10 on the x axis
                             // but only -5 to 5 on the y axis
                             getRaycastCover({
                                 type: "SHAPE",
                                 shapeType: "CIRCLE",
-                                position: { x: 0, y: 0 },
+                                position: ORIGIN,
                                 rotation: 0,
                                 scale: { x: 1, y: 1 },
                                 width: 20,
@@ -250,7 +266,7 @@ describe("raycastSingle", () => {
                                 metadata: {
                                     [METADATA_KEY_SOLIDITY]: 0.5,
                                 },
-                            } as Cover),
+                            } as Cover)[0],
                     },
                 ],
             ]),
@@ -258,9 +274,9 @@ describe("raycastSingle", () => {
 
         const start = { x: -20, y: -7 };
         const end = { x: 20, y: -7 };
-        const result = raycastSingle(state, start, end);
-
-        expect(result).toEqual(SOLIDITY_NO_COVER);
+        const [point, solidity] = raycastSingle(state, start, end);
+        expect(point).toEqual(end);
+        expect(solidity).toEqual(SOLIDITY_NO_COVER);
     });
 
     it("Should only return the most solid when there are multiple partial covers", () => {
@@ -289,9 +305,9 @@ describe("raycastSingle", () => {
         // start -> first vertical line -> second vertical line -> end
         const start = { x: 0, y: 0 };
         const end = { x: 20, y: 0 };
-        const result = raycastSingle(state, start, end);
-
-        expect(result).toEqual(0.9);
+        const [point, solidity] = raycastSingle(state, start, end);
+        expect(point).toEqual({ x: 10, y: 0 });
+        expect(solidity).toEqual(0.9);
     });
 
     it("Should treat characters as partial cover", () => {
@@ -307,9 +323,9 @@ describe("raycastSingle", () => {
 
         const start = { x: -10, y: -10 };
         const end = { x: 10, y: -10 };
-        const result = raycastSingle(state, start, end);
+        const [, solidity] = raycastSingle(state, start, end);
 
-        expect(result).toEqual(MOCK_CHARACTER_SOLIDITY);
+        expect(solidity).toEqual(MOCK_CHARACTER_SOLIDITY);
     });
 
     it("Should intersect path quads", () => {
@@ -321,6 +337,7 @@ describe("raycastSingle", () => {
                     MOCK_ID,
                     {
                         lastModified: "",
+                        centroid: ORIGIN, // wrong but it's not read by this test
                         raycastCover: getRaycastCover({
                             type: "PATH",
                             position: ORIGIN,
@@ -334,7 +351,7 @@ describe("raycastSingle", () => {
                             metadata: {
                                 [METADATA_KEY_SOLIDITY]: 0.5,
                             },
-                        } as Cover),
+                        } as Cover)[0],
                     },
                 ],
             ]),
@@ -342,8 +359,8 @@ describe("raycastSingle", () => {
 
         const start = { x: 0, y: -1 };
         const end = { x: 10, y: -1 };
-        const result = raycastSingle(state, start, end);
+        const [, solidity] = raycastSingle(state, start, end);
 
-        expect(result).toEqual(0.5);
+        expect(solidity).toEqual(0.5);
     });
 });

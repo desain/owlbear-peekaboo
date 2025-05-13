@@ -1,16 +1,16 @@
 import { type Vector2 } from "@owlbear-rodeo/sdk";
-import { lineString, multiLineString } from "@turf/helpers";
+import { lineString } from "@turf/helpers";
 import { lineIntersect } from "@turf/line-intersect";
 import { matrixMultiply } from "owlbear-utils";
 import { SOLIDITY_NO_COVER } from "../constants";
 import {
     type RaycastCover,
+    characterBoundingPolygonToRaycastCover,
     isRaycastCircle,
     positionToVector2,
-    vector2ToPosition,
 } from "../state/raycastCoverTypes";
 import type { PlayerStorage } from "../state/usePlayerStorage";
-import { vector2Equals } from "../utils/utils";
+import { distanceSquared, vector2Equals } from "../utils/utils";
 
 /**
  * Find intercepts with a unit circle centered on the origin.
@@ -41,6 +41,9 @@ function interceptCircleLineSeg(p1: Vector2, p2: Vector2): Vector2[] {
     return ret;
 }
 
+/**
+ * @returns All intersection points with cover.
+ */
 function intersect(
     start: Readonly<Vector2>,
     end: Readonly<Vector2>,
@@ -71,8 +74,61 @@ function intersect(
 }
 
 /**
- * @return Closest blocking point if the ray was blocked, or solidity if the ray
- *         was partially blocked. Solidity 0 means unblocked, 1 means blocked.
+ * Get closest intersection, filtering out the start and end points.
+ * @returns Closest intersection point, or null if there is no intersection,
+ *          and square distance to it.
+ */
+function closestIntersection(
+    start: Readonly<Vector2>,
+    end: Readonly<Vector2>,
+    cover: RaycastCover,
+): [point: Vector2 | null, sqDist: number] {
+    return (
+        intersect(start, end, cover)
+            // Filter out intersections that are exactly at the origin or end
+            .filter(
+                (intersection) =>
+                    !vector2Equals(intersection, start) &&
+                    !vector2Equals(intersection, end),
+            )
+            .reduce<[prevClosestPoint: Vector2 | null, prevMinSqDist: number]>(
+                ([prevClosestPoint, prevMinSqDist], point) => {
+                    const sqDist = distanceSquared(start, point);
+                    if (sqDist < prevMinSqDist) {
+                        return [point, sqDist];
+                    }
+                    return [prevClosestPoint, prevMinSqDist];
+                },
+                [null, Infinity],
+            )
+    );
+}
+
+function getCharactersRaycastCover(
+    state: Pick<PlayerStorage, "characterBoundingPolygons" | "roomMetadata">,
+) {
+    if (state.roomMetadata.characterSolidity === 0) {
+        return [];
+    } else {
+        const tokenCoverProperties = {
+            solidity: state.roomMetadata.characterSolidity,
+        };
+        return state.characterBoundingPolygons.map(
+            (poly) =>
+                [
+                    poly.id,
+                    characterBoundingPolygonToRaycastCover(
+                        poly,
+                        tokenCoverProperties,
+                    ),
+                ] as const,
+        );
+    }
+}
+
+/**
+ * @return Closest blocking point if the ray was blocked, or endpoint if ray was unobstructed;
+ *         Solidity if the ray was partially blocked. Solidity 0 = unblocked, 1 = blocked.
  */
 export function raycastSingle(
     state: Readonly<
@@ -96,68 +152,45 @@ export function raycastSingle(
      * blocked by destination.
      */
     destinationId?: string,
-): Vector2 | number {
-    // Check for blocking cover
-    let closestPt: Vector2 | null = null;
-    let minDistSq = Infinity;
-    // TODO use single intersect for both
-    const ray = lineString([
-        [start.x, start.y],
-        [end.x, end.y],
-    ]);
-    const intersections = lineIntersect(ray, state.walls.geometry);
-    for (const feat of intersections.features) {
-        const [x, y] = feat.geometry.coordinates;
-        if (x === undefined || y === undefined) {
-            continue;
-        }
-        const pt = { x, y };
-        const dx = start.x - pt.x;
-        const dy = start.y - pt.y;
-        const dSq = dx * dx + dy * dy;
-        if (dSq < minDistSq) {
-            minDistSq = dSq;
-            closestPt = pt;
-        }
-    }
-
-    if (closestPt) {
-        return closestPt;
-    }
-
-    // Check for partial cover
-    const tokenCoverProperties = {
-        solidity: state.roomMetadata.characterSolidity,
-    };
-    return [
+): [intersectPoint: Vector2, solidity: number] {
+    const raycastCoverItems = [
+        ["walls", state.walls.geometry] as const,
         ...[...state.partialCover.entries()].map(
             ([id, { raycastCover }]) => [id, raycastCover] as const,
         ),
-        // TODO: make this empty if character solidity = 0 to avoid extraneous checks
-        ...state.characterBoundingPolygons.map(
-            ({ id, worldPoints }) =>
-                [
-                    id,
-                    multiLineString(
-                        [worldPoints.map(vector2ToPosition)],
-                        tokenCoverProperties,
-                    ),
-                ] as const,
-        ),
-    ].reduce((highestSolidity, [id, cover]) => {
-        // Skip cover corresponding to the origin or destination
-        if (id !== originId && id !== destinationId) {
-            // Filter out intersections that are exactly at the origin or end
-            const intersections = intersect(start, end, cover).filter(
-                (intersection) =>
-                    !vector2Equals(intersection, start) &&
-                    !vector2Equals(intersection, end),
-            );
-            if (intersections.length !== 0) {
-                return Math.max(highestSolidity, cover.properties.solidity);
-            }
-        }
+        ...getCharactersRaycastCover(state),
+    ];
 
-        return highestSolidity;
-    }, SOLIDITY_NO_COVER);
+    const [point, , solidity] = raycastCoverItems.reduce<
+        [pt: Vector2, dSq: number, s: number]
+    >(
+        ([prevPoint, prevMinSqDist, prevHighestSolidity], [id, cover]) => {
+            if (
+                // Skip cover that's less solid than our previous results
+                prevHighestSolidity <= cover.properties.solidity &&
+                // Skip cover corresponding to the origin or destination
+                id !== originId &&
+                id !== destinationId
+            ) {
+                const [intersection, sqDist] = closestIntersection(
+                    start,
+                    end,
+                    cover,
+                );
+                if (
+                    intersection &&
+                    (prevHighestSolidity < cover.properties.solidity ||
+                        sqDist < prevMinSqDist)
+                ) {
+                    // If we're more solid, or the same solidity but closer, use this point
+                    return [intersection, sqDist, cover.properties.solidity];
+                }
+            }
+
+            return [prevPoint, prevMinSqDist, prevHighestSolidity] as const;
+        },
+        [end, distanceSquared(start, end), SOLIDITY_NO_COVER] as const,
+    );
+
+    return [point, solidity];
 }

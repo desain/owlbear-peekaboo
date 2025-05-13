@@ -1,5 +1,5 @@
 import type { Vector2 } from "@owlbear-rodeo/sdk";
-import { COLOR_BACKUP, SOLIDITY_FULL_COVER } from "../constants";
+import { COLOR_BACKUP } from "../constants";
 import { usePlayerStorage } from "../state/usePlayerStorage";
 import { getPartialCoverColor } from "../utils/utils";
 import { getGridCorners } from "./gridUtils";
@@ -8,7 +8,15 @@ import { getPinId, getPinLocation } from "./Pin";
 import { raycastSingle } from "./raycastSingle";
 
 interface LineResult {
+    /**
+     * Position where the line intersected cover.
+     * If there was no intersection, this equals the end position.
+     */
+    intersectPosition: Vector2;
     endPosition: Vector2;
+    /**
+     * Color of the line from the intersect to the end.
+     */
     color: string;
 }
 
@@ -37,27 +45,21 @@ export function raycast(
 
     let numCastsSucceeded = 0;
     const lineResults: LineResult[] = castTargets.map((target) => {
-        const result = raycastSingle(
+        const [point, solidity] = raycastSingle(
             state,
             startPosition,
             target,
             originId,
             destinationId,
         );
-        if (typeof result === "number") {
-            // Success value is the reverse of solidity - eg a line through 75% solid cover
-            // counts for 25% of a line
-            numCastsSucceeded += 1 - result;
-            return {
-                endPosition: target,
-                color: getPartialCoverColor(result),
-            };
-        } else {
-            return {
-                endPosition: result,
-                color: getPartialCoverColor(SOLIDITY_FULL_COVER),
-            };
-        }
+        // Success value is the reverse of solidity - eg a line through 75% solid cover
+        // counts for 25% of a line
+        numCastsSucceeded += 1 - solidity;
+        return {
+            intersectPosition: point,
+            endPosition: target,
+            color: getPartialCoverColor(solidity),
+        };
     });
 
     const cornerConfig = state.roomMetadata.cornerConfigs[

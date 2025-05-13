@@ -1,7 +1,6 @@
 import type { Item, Metadata, Player, Vector2 } from "@owlbear-rodeo/sdk";
 import OBR, { isWall } from "@owlbear-rodeo/sdk";
 import { multiLineString } from "@turf/helpers";
-import type { Feature, MultiLineString } from "geojson";
 import { enableMapSet } from "immer";
 import {
     type ExtractNonFunctions,
@@ -17,7 +16,7 @@ import {
     LOCAL_STORAGE_STORE_NAME,
     METADATA_KEY_ROOM_METADATA,
 } from "../constants";
-import { isCover } from "../coverTypes";
+import { isCover, type CoverCandidate } from "../coverTypes";
 import { isToken } from "../Token";
 import { getImageWorldPoints } from "../utils/utils";
 import {
@@ -67,27 +66,30 @@ function partializeLocalStorage({
     };
 }
 
+export interface CharacterBoundingPolygon {
+    id: string;
+    worldPoints: Vector2[];
+}
+
 interface OwlbearStore {
     readonly role: Role;
     readonly playerId: string;
     readonly sceneReady: boolean;
     readonly grid: GridParsed;
-    readonly characterBoundingPolygons: {
-        id: string;
-        worldPoints: Vector2[];
-    }[];
+    readonly characterBoundingPolygons: CharacterBoundingPolygon[];
     readonly walls: {
         readonly lastModified: number;
         readonly lastWallCount: number;
-        readonly geometry: Feature<MultiLineString>;
+        readonly geometry: RaycastCover;
     };
     /**
      * Maps item ID to partial cover data.
      */
     readonly partialCover: Map<
-        string,
+        CoverCandidate["id"],
         {
             lastModified: string;
+            centroid: Vector2;
             raycastCover: RaycastCover;
         }
     >;
@@ -256,9 +258,12 @@ export const usePlayerStorage = create<PlayerStorage>()(
                                 ) {
                                     newPartialCover.set(item.id, oldEntry);
                                 } else {
+                                    const [raycastCover, centroid] =
+                                        getRaycastCover(item);
                                     newPartialCover.set(item.id, {
                                         lastModified: item.lastModified,
-                                        raycastCover: getRaycastCover(item),
+                                        centroid,
+                                        raycastCover,
                                     });
                                 }
                             }
@@ -286,7 +291,9 @@ export const usePlayerStorage = create<PlayerStorage>()(
                         walls: {
                             lastModified,
                             lastWallCount: wallItems.length,
-                            geometry: multiLineString(lineStrings),
+                            geometry: multiLineString(lineStrings, {
+                                solidity: 1,
+                            }),
                         },
                     });
                 },
