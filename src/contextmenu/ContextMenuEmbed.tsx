@@ -140,7 +140,6 @@ export const ContextMenu: React.FC = () => {
                         });
                     });
                 }}
-                sx={{ mt: 1 }}
             >
                 Remove
             </Button>
