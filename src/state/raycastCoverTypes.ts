@@ -31,10 +31,7 @@ function isCoverProperties(properties: unknown): properties is CoverProperties {
     return (
         isObject(properties) &&
         "solidity" in properties &&
-        typeof properties.solidity === "number" &&
-        ("characterId" in properties
-            ? typeof properties.characterId === "string"
-            : true)
+        typeof properties.solidity === "number";
     );
 }
 
@@ -68,7 +65,7 @@ export function isRaycastCircle(circle: unknown): circle is RaycastCircle {
 }
 export type RaycastCover = RaycastLineString | RaycastCircle;
 
-export function vector2ToPosition(vector: { x: number; y: number }): Position {
+export function vector2ToPosition(vector: Vector2): Position {
     return [vector.x, vector.y];
 }
 
@@ -81,7 +78,7 @@ export function positionToVector2([x, y]: Position): Vector2 {
 
 export function getWallPositions(wall: Readonly<Wall>): Position[] {
     if (wall.points.length < 2) {
-        throw new Error("Invalid wall: " + JSON.stringify(wall));
+        throw Error("Invalid wall: " + JSON.stringify(wall));
     }
     return getCurveWallWorldPoints(wall).map(vector2ToPosition);
 }
@@ -142,7 +139,7 @@ export function getRaycastCover(cover: Cover): RaycastCover {
     }
 
     return multiLineString(
-        points.map((string) => string.map(vector2ToPosition)),
+        points.map((lineString) => lineString.map(vector2ToPosition)),
         properties,
     );
 }
