@@ -34,21 +34,21 @@ For the GM, the tool also has a mode for creating partial cover. With this mode 
 
 #### Editing Partial Cover
 
-When you right-click on a partial cover object (or select multiple and right-click), a context menu will appear with a slider labeled with a percentage (e.g., "60% permeable").
+When you right-click on a partial cover object (or select multiple and right-click), a context menu will appear with a slider that lets you set how solid that piece of cover is (e.g., "60% cover").
 
 -   If you select multiple partial cover objects with different solidity values, the slider will show the average value and indicate "Mixed".
 -   The slider will appear red if the selected objects have mixed values.
 -   Drag or click the slider to set the same solidity value for all selected items.
--   The solidity value controls how much the cover reduces visibility (0% = solid wall, 100% = fully permeable).
+-   The solidity value controls how much the cover reduces visibility (0% = no cover, 100% = solid wall).
 -   You can also remove the partial cover status from selected items using the Remove button in the menu.
 
-Lines that pass through partial cover are multiplied by the cover's solidity for the purpose of counting the number of unobstructed vision lines that reach a target. For example, if 4 vision lines to a target pass through a 50% permeable partial cover, the target will have the same cover as if 2 lines were fully unobstructed and 2 were obstructed.
+Lines that pass through partial cover are multiplied by `1 - the cover's solidity` for the purpose of counting the number of unobstructed vision lines that reach a target. For example, if 4 vision lines to a target pass through a 50% solid partial cover, the target will have the same cover as if 2 lines were fully unobstructed and 2 were obstructed.
 
-If a line passes through multiple partial cover objects with different permeabilities, only the least permeable instance of partial cover will apply.
+If a line passes through multiple partial cover objects with different solidities, only the most solid instance of partial cover will apply.
 
 ### Removing measurements
 
-Clicking the broom icon in the tool's action bar will remove all active measurements.
+Clicking the broom icon in the tool's action bar will remove all your active measurements.
 
 ### Settings
 
