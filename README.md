@@ -99,6 +99,7 @@ To make a production build run:
 -   take color input from utils once utils has it
 -   setting for restore previous visibility check when switching to tool: never/always/only on tokens
 -   better icon placement for paths with multiple subpaths
+-           "noImplicitOverride": true,
 
 ## License
 
