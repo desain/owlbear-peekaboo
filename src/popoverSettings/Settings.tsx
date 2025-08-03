@@ -15,7 +15,7 @@ import { produce } from "immer";
 import { useRehydrate } from "owlbear-utils";
 import { useEffect, useState } from "react";
 import { version } from "../../package.json";
-import { COLOR_BACKUP, DEFAULT_SOLIDITY } from "../constants";
+import { COLOR_BACKUP, DEFAULT_SOLIDITY, SOLIDITY_NO_COVER } from "../constants";
 import { setRoomMetadata } from "../state/roomMetadata";
 import { isMeasureTo, usePlayerStorage } from "../state/usePlayerStorage";
 
@@ -127,7 +127,7 @@ export function Settings() {
                                                     roomMetadata.characterSolidity =
                                                         e.target.checked
                                                             ? DEFAULT_SOLIDITY
-                                                            : 1;
+                                                            : SOLIDITY_NO_COVER;
                                                 },
                                             ),
                                         )
