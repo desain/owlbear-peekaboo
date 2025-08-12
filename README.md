@@ -96,6 +96,7 @@ To make a production build run:
 
 ## To do
 
+-   if center is visible, treat whole cell as visible?
 -   take color input from utils once utils has it
 -   setting for restore previous visibility check when switching to tool: never/always/only on tokens
 -   better icon placement for paths with multiple subpaths
