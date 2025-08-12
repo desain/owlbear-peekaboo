@@ -1,7 +1,7 @@
 {
   "name": "Peekaboo",
   "description": "Check which tokens and squares are visible from others, using walls from extensions like Dynamic Fog / Smoke & Spectre.",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "manifest_version": 1,
   "author": "desain",
   "icon": "/logo.svg",
