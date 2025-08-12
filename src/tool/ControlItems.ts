@@ -48,7 +48,7 @@ export type ControlItems = [
 ];
 
 export function makeIcon(position: Vector2): Image {
-    const size = 150;
+    const size = 512;
     const imageContent: ImageContent = {
         height: size,
         width: size,
