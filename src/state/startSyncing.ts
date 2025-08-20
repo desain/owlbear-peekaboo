@@ -25,18 +25,29 @@ export function startSyncing(): [
     unsubscribe: VoidFunction,
 ] {
     // console.log("startSyncing");
-    const store = usePlayerStorage.getState();
+    const {
+        handlePlayerChange,
+        handleRoomMetadataChange,
+        handleThemeChange,
+        setSceneReady,
+        updateLocalItems,
+        setGrid,
+        updateItems,
+    } = usePlayerStorage.getState();
 
     const playerInitialized = Promise.all([
         OBR.player.getId(),
         OBR.player.getRole(),
-    ]).then(([id, role]) => store.handlePlayerChange({ id, role }));
-    const unsubscribePlayer = OBR.player.onChange(store.handlePlayerChange);
+    ]).then(([id, role]) => handlePlayerChange({ id, role }));
+    const unsubscribePlayer = OBR.player.onChange(handlePlayerChange);
 
-    const sceneReadyInitialized = OBR.scene.isReady().then(store.setSceneReady);
+    const sceneReadyInitialized = OBR.scene.isReady().then(setSceneReady);
     const unsubscribeSceneReady = OBR.scene.onReadyChange((ready) => {
-        store.setSceneReady(ready);
+        setSceneReady(ready);
     });
+
+    const themeInitialized = OBR.theme.getTheme().then(handleThemeChange);
+    const unsubscribeTheme = OBR.theme.onChange(handleThemeChange);
 
     const gridInitialized = sceneReady
         .then(() =>
@@ -47,27 +58,25 @@ export function startSyncing(): [
             ]),
         )
         .then(([dpi, measurement, type]) =>
-            store.setGrid({ dpi, measurement, type }),
+            setGrid({ dpi, measurement, type }),
         );
-    const unsubscribeGrid = OBR.scene.grid.onChange(store.setGrid);
+    const unsubscribeGrid = OBR.scene.grid.onChange(setGrid);
 
     const itemsInitialized = gridInitialized
         .then(() => OBR.scene.items.getItems())
-        .then(store.updateItems);
-    const unsubscribeItems = OBR.scene.items.onChange(store.updateItems);
+        .then(updateItems);
+    const unsubscribeItems = OBR.scene.items.onChange(updateItems);
 
     const localItemsInitialized = OBR.scene.local
         .getItems()
-        .then(store.updateLocalItems);
-    const unsubscribeLocalItems = OBR.scene.local.onChange(
-        store.updateLocalItems,
-    );
+        .then(updateLocalItems);
+    const unsubscribeLocalItems = OBR.scene.local.onChange(updateLocalItems);
 
     const roomMetadataInitialized = OBR.room
         .getMetadata()
-        .then(store.handleRoomMetadataChange);
+        .then(handleRoomMetadataChange);
     const unsubscribeRoomMetadata = OBR.room.onMetadataChange(
-        store.handleRoomMetadataChange,
+        handleRoomMetadataChange,
     );
 
     const uninstallStorageHandler = startRehydrating(usePlayerStorage);
@@ -76,6 +85,7 @@ export function startSyncing(): [
         Promise.all([
             playerInitialized,
             sceneReadyInitialized,
+            themeInitialized,
             gridInitialized,
             itemsInitialized,
             localItemsInitialized,
@@ -84,6 +94,7 @@ export function startSyncing(): [
         deferCallAll(
             unsubscribePlayer,
             unsubscribeSceneReady,
+            unsubscribeTheme,
             unsubscribeGrid,
             unsubscribeItems,
             unsubscribeLocalItems,

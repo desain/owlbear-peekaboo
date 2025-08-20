@@ -1,8 +1,15 @@
-import type { Item, Metadata, Player, Vector2 } from "@owlbear-rodeo/sdk";
+import type {
+    Item,
+    Metadata,
+    Player,
+    Theme,
+    Vector2,
+} from "@owlbear-rodeo/sdk";
 import OBR, { isWall } from "@owlbear-rodeo/sdk";
 import { multiLineString } from "@turf/helpers";
 import { enableMapSet } from "immer";
 import {
+    WHITE_HEX,
     type ExtractNonFunctions,
     type GridParams,
     type GridParsed,
@@ -23,14 +30,19 @@ import {
     getRaycastCover,
     getWallPositions,
     type RaycastCover,
+    type RaycastLineString,
 } from "./raycastCoverTypes";
 import { isRoomMetadata, type RoomMetadata } from "./roomMetadata";
 
 enableMapSet();
 
-export type MeasureTo = "corners" | "center";
+export type MeasureTo = "corners" | "center" | "precise";
 export function isMeasureTo(measureTo: unknown) {
-    return measureTo === "corners" || measureTo === "center";
+    return (
+        measureTo === "corners" ||
+        measureTo === "center" ||
+        measureTo === "precise"
+    );
 }
 
 interface LocalStorage {
@@ -44,6 +56,10 @@ interface LocalStorage {
      * How to measure visibility: to all corners or just the center.
      */
     readonly measureTo: MeasureTo;
+    /**
+     * Whether to hide the visibility indicator when you stop dragging with the tool.
+     */
+    readonly hideOnDragStop?: boolean;
     readonly setToolEnabled: (this: void, toolEnabled: boolean) => void;
     readonly setSnapOrigin: (this: void, snapOrigin: boolean) => void;
     readonly setContextMenuEnabled: (
@@ -51,18 +67,21 @@ interface LocalStorage {
         contextMenuEnabled: boolean,
     ) => void;
     readonly setMeasureTo: (this: void, measureTo: MeasureTo) => void;
+    readonly setHideOnDragStop: (this: void, hideOnDragStop: boolean) => void;
 }
 function partializeLocalStorage({
     toolEnabled,
     snapOrigin,
     contextMenuEnabled,
     measureTo,
+    hideOnDragStop,
 }: LocalStorage): ExtractNonFunctions<LocalStorage> {
     return {
         toolEnabled,
         snapOrigin,
         contextMenuEnabled,
         measureTo,
+        hideOnDragStop,
     };
 }
 
@@ -73,6 +92,7 @@ export interface CharacterBoundingPolygon {
 
 interface OwlbearStore {
     readonly role: Role;
+    readonly theme: Theme;
     readonly playerId: string;
     readonly sceneReady: boolean;
     readonly grid: GridParsed;
@@ -80,7 +100,7 @@ interface OwlbearStore {
     readonly walls: {
         readonly lastModified: number;
         readonly lastWallCount: number;
-        readonly geometry: RaycastCover;
+        readonly geometry: RaycastLineString;
     };
     /**
      * Maps item ID to partial cover data.
@@ -99,6 +119,7 @@ interface OwlbearStore {
         this: void,
         player: Pick<Player, "role" | "id">,
     ) => void;
+    readonly handleThemeChange: (this: void, theme: Theme) => void;
     readonly setSceneReady: (this: void, sceneReady: boolean) => void;
     readonly setGrid: (this: void, grid: GridParams) => Promise<void>;
     /**
@@ -153,9 +174,31 @@ export const usePlayerStorage = create<PlayerStorage>()(
                 setContextMenuEnabled: (contextMenuEnabled) =>
                     set({ contextMenuEnabled }),
                 setMeasureTo: (measureTo) => set({ measureTo }),
+                setHideOnDragStop: (hideOnDragStop) => set({ hideOnDragStop }),
 
                 // owlbear store
                 role: "PLAYER",
+                theme: {
+                    mode: "DARK",
+                    background: { default: WHITE_HEX, paper: WHITE_HEX },
+                    primary: {
+                        contrastText: WHITE_HEX,
+                        dark: WHITE_HEX,
+                        light: WHITE_HEX,
+                        main: WHITE_HEX,
+                    },
+                    secondary: {
+                        contrastText: WHITE_HEX,
+                        dark: WHITE_HEX,
+                        light: WHITE_HEX,
+                        main: WHITE_HEX,
+                    },
+                    text: {
+                        disabled: WHITE_HEX,
+                        primary: WHITE_HEX,
+                        secondary: WHITE_HEX,
+                    },
+                },
                 playerId: "",
                 sceneReady: false,
                 grid: {
@@ -211,6 +254,7 @@ export const usePlayerStorage = create<PlayerStorage>()(
                 },
                 handlePlayerChange: (player) =>
                     set({ role: player.role, playerId: player.id }),
+                handleThemeChange: (theme) => set({ theme }),
                 setSceneReady: (sceneReady) => set({ sceneReady }),
                 setGrid: async (grid) => {
                     const parsedScale = (await OBR.scene.grid.getScale())

@@ -15,7 +15,11 @@ import { produce } from "immer";
 import { useRehydrate } from "owlbear-utils";
 import { useEffect, useState } from "react";
 import { version } from "../../package.json";
-import { COLOR_BACKUP, DEFAULT_SOLIDITY, SOLIDITY_NO_COVER } from "../constants";
+import {
+    COLOR_BACKUP,
+    DEFAULT_SOLIDITY,
+    SOLIDITY_NO_COVER,
+} from "../constants";
 import { setRoomMetadata } from "../state/roomMetadata";
 import { isMeasureTo, usePlayerStorage } from "../state/usePlayerStorage";
 
@@ -27,20 +31,20 @@ export function Settings() {
     const numGridCorners = usePlayerStorage((store) =>
         store.getGridCornerCount(),
     );
-
     const roomMetadata = usePlayerStorage((store) => store.roomMetadata);
-
     const contextMenuEnabled = usePlayerStorage(
         (store) => store.contextMenuEnabled,
     );
     const setContextMenuEnabled = usePlayerStorage(
         (store) => store.setContextMenuEnabled,
     );
-
     const role = usePlayerStorage((store) => store.role);
-
     const measureTo = usePlayerStorage((store) => store.measureTo);
     const setMeasureTo = usePlayerStorage((store) => store.setMeasureTo);
+    const hideOnDragStop = usePlayerStorage((store) => store.hideOnDragStop);
+    const setHideOnDragStop = usePlayerStorage(
+        (store) => store.setHideOnDragStop,
+    );
 
     // debouncing
     const [localRoomMetadata, setLocalRoomMetadata] = useState(roomMetadata);
@@ -75,9 +79,27 @@ export function Settings() {
                 </FormHelperText>
             </FormGroup>
             <FormGroup sx={{ mb: 2 }}>
+                <FormControlLabel
+                    control={
+                        <Switch
+                            checked={!!hideOnDragStop}
+                            onChange={(e) =>
+                                setHideOnDragStop(e.target.checked)
+                            }
+                        />
+                    }
+                    label="Hide results when I stop dragging"
+                />
+                <FormHelperText>
+                    Whether the visibility tool should hide its results when you
+                    stop dragging with it. If unset, results will persist until
+                    you switch tools or drag again.
+                </FormHelperText>
+            </FormGroup>
+            <FormGroup sx={{ mb: 2 }}>
                 <FormControl component="fieldset">
                     <FormLabel component="legend">
-                        Measure visibility to
+                        Measure visibility:
                     </FormLabel>
                     <RadioGroup
                         row
@@ -92,18 +114,24 @@ export function Settings() {
                         <FormControlLabel
                             value="corners"
                             control={<Radio />}
-                            label="All corners"
+                            label="To cell corners"
                         />
                         <FormControlLabel
                             value="center"
                             control={<Radio />}
-                            label="Center only"
+                            label="To cell center"
+                        />
+                        <FormControlLabel
+                            value="precise"
+                            control={<Radio />}
+                            label="Precisely"
                         />
                     </RadioGroup>
                 </FormControl>
                 <FormHelperText>
-                    Choose whether to measure visibility to all corners of the
-                    target cell, or just the center.
+                    Choose how to measure visibility - to a specific point or
+                    points, or by calculating the exact percentage of the target
+                    cell that is visible
                 </FormHelperText>
             </FormGroup>
             {role === "GM" && (
@@ -160,9 +188,7 @@ export function Settings() {
                     </FormGroup>
                     <FormGroup>
                         <Typography sx={{ mb: 2 }}>
-                            Labels and colors for visible corners (0–
-                            {numGridCorners}
-                            ):
+                            Labels and colors for visibility:
                         </Typography>
                         {[...Array(numGridCorners + 1).keys()].map((n) => (
                             <Box
@@ -177,10 +203,14 @@ export function Settings() {
                                     label={
                                         n === 0
                                             ? "Fully blocked"
-                                            : n === 1
-                                            ? "1 visible corner"
                                             : n === numGridCorners
                                             ? "Fully visible"
+                                            : measureTo === "precise"
+                                            ? `${Math.round(
+                                                  (n * 100) / numGridCorners,
+                                              )}% visible`
+                                            : n === 1
+                                            ? "1 visible corner"
                                             : `${n} visible corners`
                                     }
                                     value={
@@ -246,8 +276,9 @@ export function Settings() {
                         ))}
                         <FormHelperText>
                             These labels and colors will be shown based on how
-                            many corners of a target square are visible (e.g.,
-                            "half cover", "3/4 cover").
+                            much of a target cell is visible (e.g., "half cover"
+                            if 2/4 corners are visible, "3/4 cover" if 25% of a
+                            cell is visible).
                         </FormHelperText>
                     </FormGroup>
                 </>

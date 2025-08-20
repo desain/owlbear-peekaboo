@@ -2,6 +2,7 @@ import type { Vector2 } from "@owlbear-rodeo/sdk";
 import OBR from "@owlbear-rodeo/sdk";
 import type { AbstractInteraction, ItemApi } from "owlbear-utils";
 import { getId, isObject } from "owlbear-utils";
+import type { Vector2D } from "visibility-polygon";
 import type { ControlItems } from "./ControlItems";
 import type { Pin } from "./Pin";
 
@@ -93,6 +94,13 @@ export interface DraggingState {
      * Item API that will be used to persist the items once the drag is done.
      */
     itemApi: ItemApi;
+    /**
+     * Visibility polygons from start position. In order from high to low solidity.
+     */
+    visibilityPolygons?: readonly [
+        solidity: number,
+        visibilityPolygon: readonly Vector2D[],
+    ][];
 }
 export function isDraggingState(state: ModeState): state is DraggingState {
     return isObject(state) && "interaction" in state;

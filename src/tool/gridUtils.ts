@@ -7,10 +7,11 @@ const X_SCALE_DIMETRIC = 1 / Math.tan(ANGLE_DIMETRIC_RADIANS);
 
 /**
  * @returns the corner positions of a grid cell (square or hex) given its center and grid info.
+ *          the point list is open (last position is not equal to first).
  */
 export function getGridCorners(
     center: Vector2,
-    { type, dpi }: GridParsed,
+    { type, dpi }: Pick<GridParsed, "type" | "dpi">,
 ): Vector2[] {
     if (isHexGrid(type)) {
         // 6 corners for hex, dpi is flat-to-flat distance

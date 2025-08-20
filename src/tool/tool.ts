@@ -38,6 +38,7 @@ export async function startWatchingToolEnabled(): Promise<VoidFunction> {
 
 async function installTool() {
     const visibilityMode = new VisibilityMode();
+
     const drawCoverMode = new DrawCoverMode();
     await Promise.all([
         OBR.tool.create({

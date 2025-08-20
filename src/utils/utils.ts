@@ -38,9 +38,6 @@ export function boundingBoxContains(
     );
 }
 
-export function vector2Equals(a: Vector2, b: Vector2) {
-    return a.x === b.x && a.y === b.y;
-}
 
 export async function snapToCenter(pos: Vector2): Promise<Vector2> {
     return OBR.scene.grid.snapPosition(pos, 1.0, false, true);

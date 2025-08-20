@@ -37,7 +37,7 @@ function isCoverProperties(properties: unknown): properties is CoverProperties {
     );
 }
 
-type RaycastLineString = Feature<MultiLineString, CoverProperties>;
+export type RaycastLineString = Feature<MultiLineString, CoverProperties>;
 interface RaycastCircle {
     properties: CoverProperties;
     /**

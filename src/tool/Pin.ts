@@ -1,8 +1,8 @@
 import type { Vector2 } from "@owlbear-rodeo/sdk";
 import OBR, { Math2 } from "@owlbear-rodeo/sdk";
-import { isObject, isVector2 } from "owlbear-utils";
+import { isObject, isVector2, vector2Equals } from "owlbear-utils";
 import { usePlayerStorage } from "../state/usePlayerStorage";
-import { snapToCenter, vector2Equals } from "../utils/utils";
+import { snapToCenter } from "../utils/utils";
 
 export interface LocationPin {
     readonly position: Vector2;

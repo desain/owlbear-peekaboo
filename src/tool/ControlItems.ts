@@ -1,25 +1,24 @@
 import type {
-    Curve,
     Image,
     ImageContent,
     ImageGrid,
     Item,
     Label,
     Line,
+    Path,
     Vector2,
 } from "@owlbear-rodeo/sdk";
 import {
-    buildCurve,
     buildImage,
     buildLabel,
     buildLine,
+    buildPath,
     Math2,
 } from "@owlbear-rodeo/sdk";
 import type { HasParameterizedMetadata } from "owlbear-utils";
 import eyeTarget from "../../assets/eye-target.svg";
 import { CONTROL_METADATA, METADATA_KEY_IS_CONTROL } from "../constants";
 import { usePlayerStorage } from "../state/usePlayerStorage";
-import { getGridCorners } from "./gridUtils";
 import type { Pin } from "./Pin";
 import type { RaycastResult } from "./raycast";
 import { raycast } from "./raycast";
@@ -38,11 +37,11 @@ export type ControlItems = [
     /**
      * Item used to highlight target grid cell
      */
-    highlight: Curve,
+    highlight: Path,
     /**
      * Visibility lines from start to end corners or end center.
      * First are the lines to the intersect points, then an equal
-     * number of lines from
+     * number of lines from the intersect points to the endpoints.
      */
     ...lines: Line[],
 ];
@@ -93,13 +92,11 @@ export function makeInteractionItems(
         .metadata(CONTROL_METADATA)
         .build();
 
-    const highlight = buildCurve()
+    const highlight = buildPath()
         .name("Peekaboo Cell Highlight")
         .fillOpacity(0.2)
         .strokeOpacity(1)
         .strokeWidth(5)
-        .tension(0)
-        .closed(true)
         .disableHit(true)
         .locked(true)
         .layer("POINTER")
@@ -134,7 +131,13 @@ export function makeInteractionItems(
 
 export function fixControlItems(
     [label, highlight, ...lines]: ControlItems,
-    { startPosition, labelText, highlightColor, lineResults }: RaycastResult,
+    {
+        startPosition,
+        labelText,
+        highlightPathCommands,
+        highlightColor,
+        lineResults,
+    }: RaycastResult,
     endCenter: Vector2,
 ) {
     const state = usePlayerStorage.getState();
@@ -150,8 +153,8 @@ export function fixControlItems(
     label.position = Math2.add(endCenter, { x: 0, y: -dpi / 2 });
 
     // Fix highlight
-    highlight.points = getGridCorners({ x: 0, y: 0 }, state.grid);
-    highlight.position = endCenter;
+    highlight.commands = highlightPathCommands;
+    // highlight.position = endCenter;
     highlight.style.fillColor = highlightColor;
     highlight.style.strokeColor = highlightColor;
 

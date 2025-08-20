@@ -28,6 +28,7 @@ import {
     makeIcon,
     makeInteractionItems,
 } from "./ControlItems";
+import { getVisibilityPolygons } from "./getVisibilityPolygons";
 import type {
     DisplayPreviousDragState,
     DraggingState,
@@ -51,7 +52,7 @@ import {
     movePin,
     updatePin,
 } from "./Pin";
-import { raycast } from "./raycast";
+import { intersectVisibility, raycast } from "./raycast";
 
 function getIsPrivate(context: ToolContext): boolean {
     return !!context.metadata[METADATA_KEY_TOOL_MEASURE_PRIVATE];
@@ -251,19 +252,24 @@ export class VisibilityMode implements ToolMode {
         context: ToolContext,
         event: ToolEvent,
     ) => {
-        const start = await VisibilityMode.#getStart(event);
-        const [initialEnd, , endCenter] = await movePin(
-            null,
-            event.pointerPosition,
-            this.#shouldSnap(),
-        );
-        const controls = makeInteractionItems(start, initialEnd, endCenter);
+        const [start, [initialEnd, , endCenter]] = await Promise.all([
+            VisibilityMode.#getStart(event),
+            movePin(null, event.pointerPosition, this.#shouldSnap()),
+        ]);
+
+        const visibilityPolygons =
+            usePlayerStorage.getState().measureTo === "precise"
+                ? await getVisibilityPolygons(start)
+                : undefined;
+
         if (!isInitializingDragState(this.#modeState)) {
             return; // state was changed underneath us
         }
 
+        const controls = makeInteractionItems(start, initialEnd, endCenter);
         const startInteraction = getStartInteraction(context);
         const interaction = await startInteraction<ControlItems>(...controls);
+
         if (!isInitializingDragState(this.#modeState)) {
             void interaction.keepAndStop([]); // TODO change to using?
             return; // state was changed underneath us
@@ -278,6 +284,7 @@ export class VisibilityMode implements ToolMode {
             lastUpdatedItems: controls,
             interaction,
             itemApi: getItemApi(context),
+            visibilityPolygons,
         } satisfies DraggingState;
 
         // console.log("initializeDrag done");
@@ -320,13 +327,13 @@ export class VisibilityMode implements ToolMode {
         }
         this.#modeState.end = newEnd;
 
-        const raycastResult = raycast(
-            this.#modeState.start,
-            this.#modeState.end,
-        );
-        if (!isDraggingState(this.#modeState)) {
-            return; // state was changed from underneath us
-        }
+        const raycastResult = this.#modeState.visibilityPolygons
+            ? intersectVisibility(
+                  this.#modeState.start,
+                  this.#modeState.end,
+                  this.#modeState.visibilityPolygons,
+              )
+            : raycast(this.#modeState.start, this.#modeState.end);
 
         const lastUpdatedItems = await this.#modeState.interaction.update(
             (items) => {
@@ -348,7 +355,10 @@ export class VisibilityMode implements ToolMode {
 
     readonly onToolDragEnd = (_: ToolContext, event: ToolEvent) => {
         // console.log("onToolDragEnd");
-        void this.#stopCurrentState(event, true);
+        void this.#stopCurrentState(
+            event,
+            !usePlayerStorage.getState().hideOnDragStop,
+        );
     };
 
     readonly #stopCurrentState = async (event: ToolEvent, keep: boolean) => {

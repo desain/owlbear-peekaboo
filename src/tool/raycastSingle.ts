@@ -1,7 +1,7 @@
 import { type Vector2 } from "@owlbear-rodeo/sdk";
 import { lineString } from "@turf/helpers";
 import { lineIntersect } from "@turf/line-intersect";
-import { matrixMultiply } from "owlbear-utils";
+import { matrixMultiply, vector2Equals } from "owlbear-utils";
 import { SOLIDITY_NO_COVER } from "../constants";
 import {
     type RaycastCover,
@@ -10,7 +10,7 @@ import {
     positionToVector2,
 } from "../state/raycastCoverTypes";
 import type { PlayerStorage } from "../state/usePlayerStorage";
-import { distanceSquared, vector2Equals } from "../utils/utils";
+import { distanceSquared } from "../utils/utils";
 
 /**
  * Find intercepts with a unit circle centered on the origin.
