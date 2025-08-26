@@ -1,10 +1,12 @@
-import OBR, { MathM, type Vector2 } from "@owlbear-rodeo/sdk";
+import OBR, { type Vector2 } from "@owlbear-rodeo/sdk";
 import {
     ORIGIN,
     type Position2,
     closePolygon,
     groupBy,
+    matrixMultiply,
     toPosition,
+    toVector2,
 } from "owlbear-utils";
 import {
     type Vector2D,
@@ -61,12 +63,10 @@ function getObstacles(): [solidity: number, coords: Position2[][]][] {
         ({ raycastCover }) => ({
             solidity: raycastCover.properties.solidity,
             coords: isRaycastCircle(raycastCover)
-                ? tessellateArc(
-                      MathM.decompose(raycastCover.transform).position,
-                      MathM.decompose(raycastCover.transform).scale.x,
-                      0,
-                      2 * Math.PI,
-                      10,
+                ? tessellateArc(ORIGIN, 1, 0, 2 * Math.PI, 10).map((p) =>
+                      toPosition(
+                          matrixMultiply(raycastCover.transform, toVector2(p)),
+                      ),
                   )
                 : raycastCover.geometry.coordinates
                       .map((subpath) => subpath.map((wall) => wall as Vector2D))
