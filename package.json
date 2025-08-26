@@ -1,7 +1,7 @@
 {
   "name": "owlbear-peekaboo",
   "type": "module",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Adds a tool to check token cover and visibility",
   "scripts": {
     "dev": "vite",
