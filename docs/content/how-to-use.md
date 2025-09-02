@@ -1,23 +1,3 @@
----
-title: Peekaboo
-description: Check which tokens and squares are visible from others, using walls from extensions like Dynamic Fog / Smoke & Spectre.
-author: desain
-image: https://github.com/user-attachments/assets/e3f520fd-e1aa-4904-90a3-e97f8f6d3c45
-icon: https://owlbear-peekaboo.pages.dev/logo.svg
-learn-more: https://github.com/desain/owlbear-peekaboo
-tags:
-    - tool
-manifest: https://owlbear-peekaboo.pages.dev/manifest.json
----
-
-## Features
-
--   👀 Adds a new tool to check the visiblity of tokens and grid squares
--   🧱 Walls created in other extensions to block vision will block sight lines using the tool
--   🎨 Customize the display names and colors for different levels of visibility
--   🔄 When switching back to the tool, if the previous visibility check started or ended on a token that's still present, it will update to the token's new position
--   🧙 Create partial cover (including characters) that reduce but don't block visibility
-
 ## How to use
 
 ### Measuring Visibility

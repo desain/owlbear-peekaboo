@@ -4,6 +4,10 @@
 
 Owlbear Rodeo extension for checking token visibility. Check which tokens and squares are visible from others, using walls from extensions like Dynamic Fog / Smoke & Spectre.
 
+## Installing
+
+This extension can be installed from the [Owlbear Rodeo store](https://extensions.owlbear.rodeo/peekaboo).
+
 ## Features
 
 -   👀 Adds a new tool to check the visiblity of tokens and grid squares
@@ -29,6 +33,10 @@ When switching away from the tool and then back to it, the tool will recall your
 If you start or end your measurement on a token's space, the tool will move the start or end of your measurement with the token.
 
 You can switch between private and public measuring modes - the private mode is only visible to you, and the public mode can be seen by everyone.
+
+#### Precise mode
+
+When the tool is in 'precise' mode (change this in settings), it will outline the part of the target cell that is visible. Your color and label settings will apply to the percentage of the target cell that is visible.
 
 ### Partial Cover
 
@@ -59,7 +67,7 @@ Clicking the cog icon in the tool's action bar will open its settings.
 Settings:
 
 -   **Snap Origins**: Whether the origin point of measurements snaps to the grid.
--   **Measure visibility to**: Choose whether to measure visibility to all corners of the target cell, or just the center. This setting is per-user.
+-   **Measure visibility**: Choose whether to measure visibility to all corners of the target cell, just the center, or precisely. This setting is per-user.
 -   **Enable Context Menu** (GM only): Turns on a context menu for lines, shapes, and polygons that lets you turn them into partial cover. This menu is only visible to the GM.
 -   **Characters are partial cover** (GM only): Sets a room-global setting which causes all tokens to be treated as partial cover. Useful for modeling how half cover works in games like D&D.
 -   **Labels and colors** (GM only). Sets room-global settings for how visibility will display.
@@ -96,13 +104,9 @@ To make a production build run:
 
 ## To do
 
--   if center is visible, treat whole cell as visible?
-    - alt: https://www.npmjs.com/package/@kninnug/trivis
 -   take color input from utils once utils has it
 -   setting for restore previous visibility check when switching to tool: never/always/only on tokens
 -   better icon placement for paths with multiple subpaths
--           "noImplicitOverride": true,
-- mkcert like template
 
 ## License
 
