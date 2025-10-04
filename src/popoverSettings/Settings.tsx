@@ -5,8 +5,11 @@ import {
     FormGroup,
     FormHelperText,
     FormLabel,
+    InputLabel,
+    MenuItem,
     Radio,
     RadioGroup,
+    Select,
     Switch,
     TextField,
     Typography,
@@ -21,13 +24,17 @@ import {
     SOLIDITY_NO_COVER,
 } from "../constants";
 import { setRoomMetadata } from "../state/roomMetadata";
-import { isMeasureTo, usePlayerStorage } from "../state/usePlayerStorage";
+import {
+    isMeasureTo,
+    isSnapTo,
+    usePlayerStorage,
+} from "../state/usePlayerStorage";
 
 export function Settings() {
     useRehydrate(usePlayerStorage);
 
-    const snapOrigin = usePlayerStorage((store) => store.snapOrigin);
-    const setSnapOrigin = usePlayerStorage((store) => store.setSnapOrigin);
+    const snapTo = usePlayerStorage((store) => store.snapTo);
+    const setSnapTo = usePlayerStorage((store) => store.setSnapTo);
     const numGridCorners = usePlayerStorage((store) =>
         store.getGridCornerCount(),
     );
@@ -63,21 +70,27 @@ export function Settings() {
 
     return (
         <Box sx={{ p: 2, minWidth: 300 }}>
-            <Typography variant="h6">Visibility Tool Settings</Typography>
-            <FormGroup sx={{ mb: 2 }}>
-                <FormControlLabel
-                    control={
-                        <Switch
-                            checked={snapOrigin}
-                            onChange={(e) => setSnapOrigin(e.target.checked)}
-                        />
-                    }
+            <Typography variant="h6" sx={{ mb: 2 }}>Visibility Tool Settings</Typography>
+            <FormControl sx={{ mb: 2 }} fullWidth>
+                <InputLabel id="snap-to-label">Snap Origins</InputLabel>
+                <Select
+                    labelId="snap-to-label"
+                    value={snapTo}
                     label="Snap Origins"
-                />
+                    onChange={(e) =>
+                        isSnapTo(e.target.value)
+                            ? setSnapTo(e.target.value)
+                            : null
+                    }
+                >
+                    <MenuItem value="disabled">Disabled</MenuItem>
+                    <MenuItem value="center">Cell Center</MenuItem>
+                    <MenuItem value="corners">Cell Corners</MenuItem>
+                </Select>
                 <FormHelperText>
                     Snap the origin of visibility checks to the grid.
                 </FormHelperText>
-            </FormGroup>
+            </FormControl>
             <FormGroup sx={{ mb: 2 }}>
                 <FormControlLabel
                     control={

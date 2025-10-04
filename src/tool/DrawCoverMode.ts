@@ -266,9 +266,11 @@ export class DrawCoverMode implements ToolMode {
     readonly onKeyDown = (_context: ToolContext, event: KeyEvent) => {
         switch (event.key) {
             case "Escape":
-                return this.#doLeaveTool();
+                void this.#doLeaveTool();
+                break;
             case "Enter":
-                return this.#doFinish();
+                void this.#doFinish();
+                break;
         }
     };
 
@@ -276,7 +278,7 @@ export class DrawCoverMode implements ToolMode {
         void this.#deleteControls();
 
         // Disable pen tool
-        void OBR.tool
+        return OBR.tool
             .activateMode(ID_TOOL, ID_TOOL_MODE_PARTIAL_COVER)
             .then(() =>
                 OBR.tool.setMetadata(ID_TOOL, {
@@ -285,7 +287,5 @@ export class DrawCoverMode implements ToolMode {
             );
     };
 
-    readonly onDeactivate = () => {
-        this.#doLeaveTool();
-    };
+    readonly onDeactivate = () => this.#doLeaveTool();
 }

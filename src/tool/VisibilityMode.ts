@@ -117,8 +117,16 @@ export class VisibilityMode implements ToolMode {
 
     static readonly #getStart = async (event: ToolEvent): Promise<Pin> => {
         let startPosition = event.pointerPosition;
-        if (usePlayerStorage.getState().snapOrigin) {
-            startPosition = await snapToCenter(startPosition);
+        const snapTo = usePlayerStorage.getState().snapTo;
+        if (snapTo !== "disabled") {
+            const useCorners = snapTo === "corners";
+            const useCenter = snapTo === "center";
+            startPosition = await OBR.scene.grid.snapPosition(
+                startPosition,
+                1.0,
+                useCorners,
+                useCenter,
+            );
         }
         if (event.target && event.target.layer === "CHARACTER") {
             return {
