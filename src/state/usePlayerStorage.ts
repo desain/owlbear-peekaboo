@@ -36,6 +36,11 @@ import { isRoomMetadata, type RoomMetadata } from "./roomMetadata";
 
 enableMapSet();
 
+export type SnapTo = "disabled" | "center" | "corners";
+export function isSnapTo(snapTo: unknown): snapTo is SnapTo {
+    return snapTo === "disabled" || snapTo === "center" || snapTo === "corners";
+}
+
 export type MeasureTo = "corners" | "center" | "precise";
 export function isMeasureTo(measureTo: unknown) {
     return (
@@ -47,7 +52,7 @@ export function isMeasureTo(measureTo: unknown) {
 
 interface LocalStorage {
     readonly toolEnabled: boolean;
-    readonly snapOrigin: boolean;
+    readonly snapTo: SnapTo;
     /**
      * If true, right-click context menu for converting polygons is enabled.
      */
@@ -61,7 +66,7 @@ interface LocalStorage {
      */
     readonly hideOnDragStop?: boolean;
     readonly setToolEnabled: (this: void, toolEnabled: boolean) => void;
-    readonly setSnapOrigin: (this: void, snapOrigin: boolean) => void;
+    readonly setSnapTo: (this: void, snapTo: SnapTo) => void;
     readonly setContextMenuEnabled: (
         this: void,
         contextMenuEnabled: boolean,
@@ -71,14 +76,14 @@ interface LocalStorage {
 }
 function partializeLocalStorage({
     toolEnabled,
-    snapOrigin,
+    snapTo,
     contextMenuEnabled,
     measureTo,
     hideOnDragStop,
 }: LocalStorage): ExtractNonFunctions<LocalStorage> {
     return {
         toolEnabled,
-        snapOrigin,
+        snapTo,
         contextMenuEnabled,
         measureTo,
         hideOnDragStop,
@@ -166,11 +171,11 @@ export const usePlayerStorage = create<PlayerStorage>()(
             immer((set, get) => ({
                 // local storage
                 toolEnabled: true,
-                snapOrigin: false,
+                snapTo: "disabled",
                 contextMenuEnabled: false,
                 measureTo: "corners",
                 setToolEnabled: (toolEnabled) => set({ toolEnabled }),
-                setSnapOrigin: (snapOrigin) => set({ snapOrigin }),
+                setSnapTo: (snapTo) => set({ snapTo }),
                 setContextMenuEnabled: (contextMenuEnabled) =>
                     set({ contextMenuEnabled }),
                 setMeasureTo: (measureTo) => set({ measureTo }),
@@ -351,6 +356,16 @@ export const usePlayerStorage = create<PlayerStorage>()(
             {
                 name: LOCAL_STORAGE_STORE_NAME,
                 partialize: partializeLocalStorage,
+                version: 1,
+                migrate: (persistedState: any, version) => {
+                    if (version < 1) {
+                        persistedState.snapTo = persistedState.snapOrigin
+                            ? "center"
+                            : "disabled";
+                        delete persistedState.snapOrigin;
+                    }
+                    return persistedState;
+                },
             },
         ),
     ),

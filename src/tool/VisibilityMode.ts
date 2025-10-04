@@ -19,7 +19,7 @@ import {
     ID_TOOL_MODE_VISIBILITY,
     METADATA_KEY_TOOL_MEASURE_PRIVATE,
 } from "../constants";
-import { usePlayerStorage } from "../state/usePlayerStorage";
+import { usePlayerStorage, type SnapTo } from "../state/usePlayerStorage";
 import { snapToCenter } from "../utils/utils";
 import type { ControlItems } from "./ControlItems";
 import {
@@ -117,8 +117,16 @@ export class VisibilityMode implements ToolMode {
 
     static readonly #getStart = async (event: ToolEvent): Promise<Pin> => {
         let startPosition = event.pointerPosition;
-        if (usePlayerStorage.getState().snapOrigin) {
-            startPosition = await snapToCenter(startPosition);
+        const snapTo = usePlayerStorage.getState().snapTo;
+        if (snapTo !== "disabled") {
+            const useCorners = snapTo === "corners";
+            const useCenter = snapTo === "center";
+            startPosition = await OBR.scene.grid.snapPosition(
+                startPosition,
+                1.0,
+                useCorners,
+                useCenter,
+            );
         }
         if (event.target && event.target.layer === "CHARACTER") {
             return {
