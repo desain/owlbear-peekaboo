@@ -24,12 +24,13 @@ import {
     ID_TOOL_MODE_PARTIAL_COVER,
     METADATA_KEY_SOLIDITY,
 } from "../constants";
-import type { CoverCandidate } from "../coverTypes";
+import type { Cover, CoverCandidate } from "../coverTypes";
 import {
     isCover,
     isCoverCandidate,
     KEY_FILTERS_COVER_CANDIDATES,
 } from "../coverTypes";
+import { getRaycastCover } from "../state/raycastCoverTypes";
 import { usePlayerStorage } from "../state/usePlayerStorage";
 import type { Token } from "../Token";
 import { isToken } from "../Token";
@@ -66,13 +67,14 @@ function getIconPosition(item: CoverCandidate): Vector2 {
     if (centroid) {
         return centroid;
     } else {
-        console.error("Unstored cover, defaulting to icon at item position");
-        return item.position;
+        // TODO: rather than cast, split out centroid logic
+        const [, newCentroid] = getRaycastCover(item as Cover);
+        return newCentroid;
     }
 }
 
 function createIcon(item: CoverCandidate): Image {
-    const size = 150;
+    const size = 512;
 
     const imageContent: ImageContent = {
         height: size,
@@ -104,7 +106,7 @@ function createIcon(item: CoverCandidate): Image {
 }
 
 function createIconForToken(token: Token): Image {
-    const size = 150;
+    const size = 512;
     const imageContent: ImageContent = {
         height: size,
         width: size,
