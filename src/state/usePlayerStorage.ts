@@ -259,7 +259,7 @@ export const usePlayerStorage = create<PlayerStorage>()(
                 setGrid: async (grid) => {
                     const parsedScale = (await OBR.scene.grid.getScale())
                         .parsed;
-                    return set({
+                    set({
                         grid: {
                             dpi: grid.dpi,
                             measurement: grid.measurement,
