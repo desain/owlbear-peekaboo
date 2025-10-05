@@ -29,6 +29,7 @@ import {
     makeInteractionItems,
 } from "./ControlItems";
 import { getVisibilityPolygons } from "./getVisibilityPolygons";
+import { snap } from "./gridUtils";
 import type {
     DisplayPreviousDragState,
     DraggingState,
@@ -115,19 +116,13 @@ export class VisibilityMode implements ToolMode {
      */
     #controlDown = false;
 
-    static readonly #getStart = async (event: ToolEvent): Promise<Pin> => {
+    static readonly #getStart = (event: ToolEvent): Pin => {
         let startPosition = event.pointerPosition;
-        const snapTo = usePlayerStorage.getState().snapTo;
+        const { snapTo, grid } = usePlayerStorage.getState();
         if (snapTo !== "disabled") {
-            const useCorners = snapTo === "corners";
-            const useCenter = snapTo === "center";
-            startPosition = await OBR.scene.grid.snapPosition(
-                startPosition,
-                1.0,
-                useCorners,
-                useCenter,
-            );
+            startPosition = snap(startPosition, grid, snapTo === "center");
         }
+        // debugPoints([event.pointerPosition, startPosition]);
         if (event.target && event.target.layer === "CHARACTER") {
             return {
                 id: event.target.id,
@@ -260,10 +255,12 @@ export class VisibilityMode implements ToolMode {
         context: ToolContext,
         event: ToolEvent,
     ) => {
-        const [start, [initialEnd, , endCenter]] = await Promise.all([
-            VisibilityMode.#getStart(event),
-            movePin(null, event.pointerPosition, this.#shouldSnap()),
-        ]);
+        const start = VisibilityMode.#getStart(event);
+        const [initialEnd, , endCenter] = await movePin(
+            null,
+            event.pointerPosition,
+            this.#shouldSnap(),
+        );
 
         const visibilityPolygons =
             usePlayerStorage.getState().measureTo === "precise"
