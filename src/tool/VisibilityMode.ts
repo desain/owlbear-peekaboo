@@ -11,6 +11,7 @@ import type { ItemApi } from "owlbear-utils";
 import {
     createLocalInteraction,
     getId,
+    snap,
     wrapRealInteraction,
 } from "owlbear-utils";
 import eyeTarget from "../../assets/eye-target.svg";
@@ -29,7 +30,6 @@ import {
     makeInteractionItems,
 } from "./ControlItems";
 import { getVisibilityPolygons } from "./getVisibilityPolygons";
-import { snap } from "./gridUtils";
 import type {
     DisplayPreviousDragState,
     DraggingState,

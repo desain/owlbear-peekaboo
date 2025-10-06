@@ -9,6 +9,7 @@ import OBR, { isWall } from "@owlbear-rodeo/sdk";
 import { multiLineString } from "@turf/helpers";
 import { enableMapSet } from "immer";
 import {
+    getImageWorldPoints,
     WHITE_HEX,
     type ExtractNonFunctions,
     type GridParams,
@@ -26,7 +27,6 @@ import {
 } from "../constants";
 import { isCover, type CoverCandidate } from "../coverTypes";
 import { isToken } from "../Token";
-import { getImageWorldPoints } from "../utils/utils";
 import {
     getRaycastCover,
     getWallPositions,
@@ -360,7 +360,9 @@ export const usePlayerStorage = create<PlayerStorage>()(
                 version: 1,
                 migrate: (st: unknown, version) => {
                     if (version < 1) {
-                        const persistedState = st as Writeable<LocalStorage & {snapOrigin?: boolean}>;
+                        const persistedState = st as Writeable<
+                            LocalStorage & { snapOrigin?: boolean }
+                        >;
                         persistedState.snapTo = persistedState.snapOrigin
                             ? "center"
                             : "disabled";

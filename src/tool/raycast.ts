@@ -11,12 +11,11 @@ import {
     type Polygon,
     type Position,
 } from "martinez-polygon-clipping";
-import { closePolygon, toPosition } from "owlbear-utils";
+import { closePolygon, getGridCorners, toPosition } from "owlbear-utils";
 import { type Vector2D } from "visibility-polygon";
 import { COLOR_BACKUP } from "../constants";
 import { usePlayerStorage } from "../state/usePlayerStorage";
 import { getPartialCoverColor } from "../utils/utils";
-import { getGridCorners } from "./gridUtils";
 import type { Pin } from "./Pin";
 import { getPinId, getPinLocation } from "./Pin";
 import { raycastSingle } from "./raycastSingle";

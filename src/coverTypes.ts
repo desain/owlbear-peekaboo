@@ -7,7 +7,12 @@ import type {
     Shape,
 } from "@owlbear-rodeo/sdk";
 import { isCurve, isLine, isPath, isShape } from "@owlbear-rodeo/sdk";
-import type { HasParameterizedMetadata } from "owlbear-utils";
+import {
+    containsImplies,
+    isFalse,
+    isNumber,
+    type HasParameterizedMetadata,
+} from "owlbear-utils";
 import { METADATA_KEY_IS_CONTROL, METADATA_KEY_SOLIDITY } from "./constants";
 
 // General cover
@@ -28,12 +33,13 @@ export type CoverCandidate = (Curve | Shape | Line | Path) &
 export function isCoverCandidate(item: Item): item is CoverCandidate {
     return (
         (isCurve(item) || isShape(item) || isLine(item) || isPath(item)) &&
-        (!(METADATA_KEY_SOLIDITY in item.metadata) ||
-            typeof item.metadata[METADATA_KEY_SOLIDITY] === "number") &&
-        (!(METADATA_KEY_IS_CONTROL in item.metadata) ||
-            item.metadata[METADATA_KEY_IS_CONTROL] === false) &&
-        (!(SMOKE_AND_SPECTRE_IS_VISION_LINE in item.metadata) ||
-            item.metadata[SMOKE_AND_SPECTRE_IS_VISION_LINE] === false)
+        containsImplies(item.metadata, METADATA_KEY_SOLIDITY, isNumber) &&
+        containsImplies(item.metadata, METADATA_KEY_IS_CONTROL, isFalse) &&
+        containsImplies(
+            item.metadata,
+            SMOKE_AND_SPECTRE_IS_VISION_LINE,
+            isFalse,
+        )
     );
 }
 const KEY_FILTER_COVER_CANDIDATE: KeyFilter[] = [

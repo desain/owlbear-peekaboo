@@ -11,16 +11,17 @@ import {
 } from "@owlbear-rodeo/sdk";
 import { multiLineString } from "@turf/helpers";
 import type { Feature, MultiLineString, Position } from "geojson";
-import { isObject } from "owlbear-utils";
-import { METADATA_KEY_SOLIDITY } from "../constants";
-import { type Cover } from "../coverTypes";
 import {
     getCurveWallWorldPoints,
     getLineWorldPoints,
-    getPathWorldPoints,
     getShapeWorldPoints,
     isNonCircleShape,
-} from "../utils/utils";
+    isObject,
+    toPosition,
+} from "owlbear-utils";
+import { METADATA_KEY_SOLIDITY } from "../constants";
+import { type Cover } from "../coverTypes";
+import { getPathWorldPoints } from "../utils/utils";
 import type { CharacterBoundingPolygon } from "./usePlayerStorage";
 
 export interface CoverProperties {
@@ -67,29 +68,18 @@ export function isRaycastCircle(circle: unknown): circle is RaycastCircle {
 }
 export type RaycastCover = RaycastLineString | RaycastCircle;
 
-export function vector2ToPosition(vector: Vector2): Position {
-    return [vector.x, vector.y];
-}
-
-export function positionToVector2([x, y]: Position): Vector2 {
-    if (x === undefined || y === undefined) {
-        throw Error("invalid position");
-    }
-    return { x, y };
-}
-
 export function getWallPositions(wall: Readonly<Wall>): Position[] {
     if (wall.points.length < 2) {
         throw Error("Invalid wall: " + JSON.stringify(wall));
     }
-    return getCurveWallWorldPoints(wall).map(vector2ToPosition);
+    return getCurveWallWorldPoints(wall).map(toPosition);
 }
 
 export function characterBoundingPolygonToRaycastCover(
     { worldPoints }: CharacterBoundingPolygon,
     tokenCoverProperties: CoverProperties,
 ): RaycastCover {
-    const positions = worldPoints.map(vector2ToPosition);
+    const positions = worldPoints.map(toPosition);
     if (positions[0]) {
         positions.push(positions[0]);
     }
@@ -164,22 +154,8 @@ export function getRaycastCover(
     }
 
     const raycastCover = multiLineString(
-        points.map((lineString) => lineString.map(vector2ToPosition)),
+        points.map((lineString) => lineString.map(toPosition)),
         properties,
     );
     return [raycastCover, centroid];
 }
-
-// function debugDrawPoints(points: Vector2[]) {
-//     void OBR.scene.local.addItems(
-//         points.map((point) =>
-//             buildShape()
-//                 .shapeType("CIRCLE")
-//                 .width(10)
-//                 .height(10)
-//                 .layer("CONTROL")
-//                 .position(point)
-//                 .build(),
-//         ),
-//     );
-// }

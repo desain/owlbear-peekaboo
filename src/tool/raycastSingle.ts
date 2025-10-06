@@ -1,16 +1,19 @@
 import { type Vector2 } from "@owlbear-rodeo/sdk";
 import { lineString } from "@turf/helpers";
 import { lineIntersect } from "@turf/line-intersect";
-import { matrixMultiply, vector2Equals } from "owlbear-utils";
+import {
+    distanceSquared,
+    matrixMultiply,
+    toVector2Unchecked,
+    vector2Equals,
+} from "owlbear-utils";
 import { SOLIDITY_NO_COVER } from "../constants";
 import {
     type RaycastCover,
     characterBoundingPolygonToRaycastCover,
     isRaycastCircle,
-    positionToVector2,
 } from "../state/raycastCoverTypes";
 import type { PlayerStorage } from "../state/usePlayerStorage";
-import { distanceSquared } from "../utils/utils";
 
 /**
  * Find intercepts with a unit circle centered on the origin.
@@ -68,7 +71,7 @@ function intersect(
             [end.x, end.y],
         ]);
         return lineIntersect(ray, cover).features.map((pt) =>
-            positionToVector2(pt.geometry.coordinates),
+            toVector2Unchecked(pt.geometry.coordinates),
         );
     }
 }

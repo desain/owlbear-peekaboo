@@ -1,13 +1,10 @@
 import { Command, Math2, type Vector2 } from "@owlbear-rodeo/sdk";
 import { multiLineString } from "@turf/helpers";
-import { ORIGIN } from "owlbear-utils";
+import { ORIGIN, toPosition } from "owlbear-utils";
 import { describe, expect, it } from "vitest";
 import { METADATA_KEY_SOLIDITY, SOLIDITY_NO_COVER } from "../src/constants";
 import type { Cover } from "../src/coverTypes";
-import {
-    getRaycastCover,
-    vector2ToPosition,
-} from "../src/state/raycastCoverTypes";
+import { getRaycastCover } from "../src/state/raycastCoverTypes";
 import type { RoomMetadata } from "../src/state/roomMetadata";
 import type { PlayerStorage } from "../src/state/usePlayerStorage";
 import { raycastSingle } from "../src/tool/raycastSingle";
@@ -36,7 +33,7 @@ describe("raycastSingle", () => {
             {
                 lastModified: "",
                 centroid: Math2.centroid(points),
-                raycastCover: multiLineString([points.map(vector2ToPosition)], {
+                raycastCover: multiLineString([points.map(toPosition)], {
                     solidity,
                 }),
             },
