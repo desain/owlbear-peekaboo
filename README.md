@@ -40,7 +40,11 @@ When the tool is in 'precise' mode (change this in settings), it will outline th
 
 ### Partial Cover
 
-For the GM, the tool also has a mode for creating partial cover. With this mode active, you can click on lines, polygons, and shapes in the map to turn them into partial cover (or click again to unmark them). You can also click on the map to draw a partial cover polygon yourself.
+For the GM, the tool also has a mode for creating partial cover. With this mode active, you can click on lines, polygons, and shapes in the map to turn them into partial cover (or click again to unmark them).
+
+#### Drawing Partial Cover
+
+With the partial cover mode active, you can also click on the map to draw a partial cover polygon yourself. When you finish drawing the polygon, it will be locked, so you'll need to select it by double-clicking with the hand tool to edit it (or bring up its context menu by control-right-clicking on it).
 
 #### Editing Partial Cover
 
@@ -104,7 +108,6 @@ To make a production build run:
 
 ## To do
 
--   setting to snap origin to corners
 -   take color input from utils once utils has it
 -   setting for restore previous visibility check when switching to tool: never/always/only on tokens
 -   better icon placement for paths with multiple subpaths

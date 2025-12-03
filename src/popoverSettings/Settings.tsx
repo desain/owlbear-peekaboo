@@ -1,3 +1,4 @@
+import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import {
     Box,
     FormControl,
@@ -6,6 +7,7 @@ import {
     FormHelperText,
     FormLabel,
     InputLabel,
+    Link,
     MenuItem,
     Radio,
     RadioGroup,
@@ -70,7 +72,26 @@ export function Settings() {
 
     return (
         <Box sx={{ p: 2, minWidth: 300 }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>Visibility Tool Settings</Typography>
+            <Typography
+                variant="h6"
+                sx={{ mb: 2, display: "flex", alignItems: "center" }}
+            >
+                Visibility Tool Settings
+                <Link
+                    href="https://extensions.owlbear.rodeo/peekaboo"
+                    title="Peekaboo extension guide"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                        marginLeft: "8px",
+                        display: "flex",
+                        alignItems: "center",
+                        color: "inherit",
+                    }}
+                >
+                    <HelpOutlineIcon fontSize="small" />
+                </Link>
+            </Typography>
             <FormControl sx={{ mb: 2 }} fullWidth>
                 <InputLabel id="snap-to-label">Snap Origins</InputLabel>
                 <Select
